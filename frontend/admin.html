@@ -9,13 +9,44 @@
 <body>
     <div class="app">
         <header>
-            <h1>Admin Management Panel</h1>
-            <p id="adminInfo"></p>
-            <div style="display:flex; gap:10px;">
+            <div>
+                <h1>Admin Management Panel</h1>
+                <p>Manage users and monitor API request activity.</p>
+                <p id="adminInfo"></p>
+            </div>
+
+            <div class="header-actions">
                 <button id="goTesterBtn" type="button">API Tester</button>
                 <button id="logoutBtn" type="button">Logout</button>
             </div>
         </header>
+
+        <div class="card">
+            <div class="section-head">
+                <h2>Dashboard</h2>
+            </div>
+
+            <div class="stats-grid">
+                <div class="stat-box">
+                    <h3>Total Users</h3>
+                    <p id="statUsers">0</p>
+                </div>
+                <div class="stat-box">
+                    <h3>Total Requests</h3>
+                    <p id="statRequests">0</p>
+                </div>
+                <div class="stat-box">
+                    <h3>Successful Requests</h3>
+                    <p id="statSuccess">0</p>
+                </div>
+                <div class="stat-box">
+                    <h3>Success Rate</h3>
+                    <p id="statRate">0%</p>
+                </div>
+            </div>
+
+            <canvas id="methodChart" height="110"></canvas>
+        </div>
 
         <div class="bottom-grid">
             <div class="card">
@@ -23,19 +54,39 @@
                     <h2>Users</h2>
                     <button id="refreshUsersBtn" type="button">Refresh</button>
                 </div>
-                <div id="usersOutput"></div>
+
+                <div class="table-wrapper">
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Username</th>
+                                <th>Email</th>
+                                <th>Role</th>
+                                <th>Created At</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="usersTableBody">
+                            <tr>
+                                <td colspan="6">Loading users...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
             </div>
 
             <div class="card">
                 <div class="section-head">
                     <h2>All History</h2>
-                    <button id="clearHistoryBtn" type="button">Clear All</button>
+                    <button id="refreshHistoryBtn" type="button">Refresh</button>
                 </div>
                 <div id="historyOutput"></div>
             </div>
         </div>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="admin.js"></script>
 </body>
 </html>

@@ -2,3 +2,5 @@ Flask
 Flask-Cors
 requests
 werkzeug
+flask-jwt-extended
+gunicorn

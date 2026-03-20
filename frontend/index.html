@@ -8,13 +8,18 @@
 </head>
 <body>
     <div class="app">
-        <header>
-            <p id="userInfo"></p>
-<div class="header-actions">
-    <button type="button" id="adminBtn">Admin Panel</button>
-    <button type="button" id="logoutBtn">Logout</button>
-</div>
-        </header>
+       <header>
+    <div>
+        <h1>API Management & Testing Tool</h1>
+        <p>Test APIs, save collections, and manage requests easily.</p>
+        <p id="userInfo"></p>
+    </div>
+
+    <div class="header-actions">
+        <button type="button" id="adminBtn">Admin Panel</button>
+        <button type="button" id="logoutBtn">Logout</button>
+    </div>
+</header>
 
         <div class="main-grid">
             <div class="card">
@@ -36,7 +41,7 @@
                 <textarea id="headers" placeholder='{"Content-Type":"application/json"}'></textarea>
 
                 <label for="body">Body (JSON)</label>
-                <textarea id="body" placeholder='{"name":"Sachin"}'></textarea>
+                <textarea id="body" placeholder='{"title":"Test","body":"Hello"}'></textarea>
 
                 <div class="button-group">
                     <button type="button" id="sendBtn">Send Request</button>
@@ -47,6 +52,12 @@
             <div class="card">
                 <div class="response-top">
                     <h2>Response</h2>
+
+                    <h2>Response</h2>
+<p style="margin:0 0 12px; color:#64748b; font-size:14px;">
+    View response body, headers, and status details.
+</p>
+
                     <div class="response-actions">
                         <button type="button" id="copyResponseBtn">Copy</button>
                         <button type="button" id="clearResponseBtn">Clear</button>
@@ -70,22 +81,26 @@
         <div class="bottom-grid">
             <div class="card">
                 <div class="section-head">
-                    <h2>History</h2>
-                    <button type="button" id="refreshHistoryBtn">Refresh</button>
+                    <h2>My History</h2>
+                    <div class="collection-actions">
+                        <button type="button" id="refreshHistoryBtn">Refresh</button>
+                        <button type="button" id="clearHistoryBtn">Clear All</button>
+                    </div>
                 </div>
                 <div id="historyOutput"></div>
             </div>
 
             <div class="card">
                 <div class="section-head">
-                    <h2>Collections</h2>
+                    <h2>My Collections</h2>
                     <button type="button" id="refreshCollectionsBtn">Refresh</button>
+                    <button type="button" id="exportCollectionsBtn">Export</button>
                 </div>
                 <div id="collectionsOutput"></div>
             </div>
         </div>
     </div>
 
-    <script src="script.js?v=7"></script>
+    <script src="script.js"></script>
 </body>
 </html>

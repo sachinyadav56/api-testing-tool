@@ -1,14 +1,22 @@
 const loggedInUser = JSON.parse(localStorage.getItem("loggedInUser"));
+const token = localStorage.getItem("token");
 
-if (!loggedInUser) {
+if (!loggedInUser || !token) {
     window.location.href = "login.html";
 }
 
-const API_BASE = "http://127.0.0.1:5000";
+const API_BASE = window.location.origin;
 
 let currentBodyResponse = "Response will appear here...";
 let currentFullResponse = "Full response will appear here...";
 let activeTab = "body";
+
+function authHeaders() {
+    return {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${localStorage.getItem("token")}`
+    };
+}
 
 function saveResponseToStorage(status, time, responseText, fullResponseText) {
     localStorage.setItem("api_status", status);
@@ -23,21 +31,10 @@ function loadResponseFromStorage() {
     const response = localStorage.getItem("api_response");
     const fullResponse = localStorage.getItem("api_full_response");
 
-    if (status !== null) {
-        document.getElementById("statusCode").textContent = status;
-    }
-
-    if (time !== null) {
-        document.getElementById("responseTime").textContent = time;
-    }
-
-    if (response !== null) {
-        currentBodyResponse = response;
-    }
-
-    if (fullResponse !== null) {
-        currentFullResponse = fullResponse;
-    }
+    if (status !== null) document.getElementById("statusCode").textContent = status;
+    if (time !== null) document.getElementById("responseTime").textContent = time;
+    if (response !== null) currentBodyResponse = response;
+    if (fullResponse !== null) currentFullResponse = fullResponse;
 
     renderActiveTab();
 }
@@ -53,8 +50,6 @@ function renderActiveTab() {
     const responseEl = document.getElementById("responseOutput");
     const bodyTabBtn = document.getElementById("bodyTabBtn");
     const fullTabBtn = document.getElementById("fullTabBtn");
-
-    if (!responseEl || !bodyTabBtn || !fullTabBtn) return;
 
     if (activeTab === "body") {
         responseEl.innerText = currentBodyResponse;
@@ -82,11 +77,10 @@ function clearResponse() {
 }
 
 async function copyResponse() {
-    const textToCopy = activeTab === "body" ? currentBodyResponse : currentFullResponse;
-
     try {
+        const textToCopy = activeTab === "body" ? currentBodyResponse : currentFullResponse;
         await navigator.clipboard.writeText(textToCopy);
-        alert("Response copied successfully");
+        alert("Copied to clipboard");
     } catch (error) {
         alert("Copy failed: " + error.message);
     }
@@ -94,10 +88,9 @@ async function copyResponse() {
 
 function parseJsonInput(text, fieldName) {
     if (!text || !text.trim()) return {};
-
     try {
         return JSON.parse(text);
-    } catch (error) {
+    } catch {
         throw new Error(`Invalid JSON in ${fieldName}`);
     }
 }
@@ -113,17 +106,16 @@ async function sendRequest(event) {
     const statusEl = document.getElementById("statusCode");
     const timeEl = document.getElementById("responseTime");
 
-    let headers = {};
-    let body = {};
-
     if (!url) {
         alert("Please enter API URL");
         return;
     }
 
+    let headers = {};
+    let body = {};
+
     try {
         headers = parseJsonInput(headersText, "headers");
-
         if (["POST", "PUT", "PATCH", "DELETE"].includes(method)) {
             body = parseJsonInput(bodyText, "body");
         }
@@ -141,30 +133,23 @@ async function sendRequest(event) {
     try {
         const response = await fetch(`${API_BASE}/request`, {
             method: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
+            headers: authHeaders(),
             body: JSON.stringify({ method, url, headers, body })
         });
 
         const data = await response.json();
 
         const finalStatus = data.status_code ?? (response.ok ? response.status : "Error");
-        const finalTime = data.response_time_ms !== undefined
-            ? `${data.response_time_ms} ms`
-            : "-";
+        const finalTime = data.response_time_ms !== undefined ? `${data.response_time_ms} ms` : "-";
 
         if (data.error) {
             currentBodyResponse = `Error: ${data.error}`;
             currentFullResponse = JSON.stringify(data, null, 2);
         } else {
             currentBodyResponse =
-                data.response !== undefined && data.response !== null
-                    ? (typeof data.response === "object"
-                        ? JSON.stringify(data.response, null, 2)
-                        : String(data.response))
-                    : "No response body found.";
-
+                typeof data.response === "object"
+                    ? JSON.stringify(data.response, null, 2)
+                    : String(data.response ?? "No response body found.");
             currentFullResponse = JSON.stringify(data, null, 2);
         }
 
@@ -173,14 +158,12 @@ async function sendRequest(event) {
 
         saveResponseToStorage(finalStatus, finalTime, currentBodyResponse, currentFullResponse);
         renderActiveTab();
-
         await loadHistory();
     } catch (error) {
         statusEl.textContent = "Error";
         timeEl.textContent = "-";
         currentBodyResponse = "Error: " + error.message;
         currentFullResponse = "Error: " + error.message;
-
         saveResponseToStorage("Error", "-", currentBodyResponse, currentFullResponse);
         renderActiveTab();
     }
@@ -197,13 +180,13 @@ async function saveCollection(event) {
     const headersText = document.getElementById("headers").value.trim();
     const bodyText = document.getElementById("body").value.trim();
 
-    let headers = {};
-    let body = {};
-
     if (!url) {
         alert("Please enter API URL before saving collection");
         return;
     }
+
+    let headers = {};
+    let body = {};
 
     try {
         headers = parseJsonInput(headersText, "headers");
@@ -216,21 +199,12 @@ async function saveCollection(event) {
     try {
         const response = await fetch(`${API_BASE}/save`, {
             method: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
-                user_id: loggedInUser.id,
-                name: name.trim(),
-                method,
-                url,
-                headers,
-                body
-            })
+            headers: authHeaders(),
+            body: JSON.stringify({ name: name.trim(), method, url, headers, body })
         });
 
         const data = await response.json();
-        alert(data.message || data.error || "Collection saved successfully");
+        alert(data.message || data.error || "Saved successfully");
         await loadCollections();
     } catch (error) {
         alert("Error saving collection: " + error.message);
@@ -245,7 +219,7 @@ function loadCollectionToForm(item) {
         document.getElementById("headers").value = item.headers
             ? JSON.stringify(JSON.parse(item.headers), null, 2)
             : "";
-    } catch (error) {
+    } catch {
         document.getElementById("headers").value = item.headers || "";
     }
 
@@ -253,14 +227,11 @@ function loadCollectionToForm(item) {
         document.getElementById("body").value = item.body
             ? JSON.stringify(JSON.parse(item.body), null, 2)
             : "";
-    } catch (error) {
+    } catch {
         document.getElementById("body").value = item.body || "";
     }
 
-    window.scrollTo({
-        top: 0,
-        behavior: "smooth"
-    });
+    window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
 async function editCollection(item) {
@@ -273,17 +244,15 @@ async function editCollection(item) {
     try {
         parsedHeaders = item.headers ? JSON.parse(item.headers) : {};
         parsedBody = item.body ? JSON.parse(item.body) : {};
-    } catch (error) {
+    } catch {
         alert("Collection data format is invalid");
         return;
     }
 
     try {
-        const response = await fetch(`${API_BASE}/collections/${item.id}`, {
+        const response = await fetch(`${API_BASE}/collections/item/${item.id}`, {
             method: "PUT",
-            headers: {
-                "Content-Type": "application/json"
-            },
+            headers: authHeaders(),
             body: JSON.stringify({
                 name: newName.trim(),
                 method: item.method,
@@ -302,12 +271,14 @@ async function editCollection(item) {
 }
 
 async function deleteCollection(collectionId) {
-    const confirmDelete = confirm("Are you sure you want to delete this collection?");
-    if (!confirmDelete) return;
+    if (!confirm("Are you sure you want to delete this collection?")) return;
 
     try {
-        const response = await fetch(`${API_BASE}/collections/${collectionId}`, {
-            method: "DELETE"
+        const response = await fetch(`${API_BASE}/collections/item/${collectionId}`, {
+            method: "DELETE",
+            headers: {
+                "Authorization": `Bearer ${localStorage.getItem("token")}`
+            }
         });
 
         const data = await response.json();
@@ -320,7 +291,11 @@ async function deleteCollection(collectionId) {
 
 async function loadHistory() {
     try {
-        const response = await fetch(`${API_BASE}/history`);
+        const response = await fetch(`${API_BASE}/history`, {
+            headers: {
+                "Authorization": `Bearer ${localStorage.getItem("token")}`
+            }
+        });
         const data = await response.json();
 
         const historyOutput = document.getElementById("historyOutput");
@@ -334,7 +309,6 @@ async function loadHistory() {
         data.forEach(item => {
             const div = document.createElement("div");
             div.className = "history-item";
-
             div.innerHTML = `
                 <div class="item-top-row">
                     <span class="method-badge method-${(item.method || "GET").toLowerCase()}">${item.method || "GET"}</span>
@@ -343,18 +317,38 @@ async function loadHistory() {
                 <div class="item-url">${item.url || "-"}</div>
                 <div class="item-date"><strong>Date:</strong> ${item.created_at || "-"}</div>
             `;
-
             historyOutput.appendChild(div);
         });
     } catch (error) {
-        document.getElementById("historyOutput").innerHTML =
-            `<p>Error loading history: ${error.message}</p>`;
+        document.getElementById("historyOutput").innerHTML = `<p>Error loading history: ${error.message}</p>`;
+    }
+}
+
+async function clearHistory() {
+    if (!confirm("Clear all your history?")) return;
+
+    try {
+        const response = await fetch(`${API_BASE}/history/clear`, {
+            method: "DELETE",
+            headers: {
+                "Authorization": `Bearer ${localStorage.getItem("token")}`
+            }
+        });
+        const data = await response.json();
+        alert(data.message || data.error || "History cleared successfully");
+        await loadHistory();
+    } catch (error) {
+        alert("Error clearing history: " + error.message);
     }
 }
 
 async function loadCollections() {
     try {
-        const response = await fetch(`${API_BASE}/collections/${loggedInUser.id}`);
+        const response = await fetch(`${API_BASE}/collections`, {
+            headers: {
+                "Authorization": `Bearer ${localStorage.getItem("token")}`
+            }
+        });
         const data = await response.json();
 
         const collectionsOutput = document.getElementById("collectionsOutput");
@@ -383,28 +377,45 @@ async function loadCollections() {
                 </div>
             `;
 
-            div.querySelector(".load-btn").addEventListener("click", () => {
-                loadCollectionToForm(item);
-            });
-
-            div.querySelector(".edit-btn").addEventListener("click", () => {
-                editCollection(item);
-            });
-
-            div.querySelector(".delete-btn").addEventListener("click", () => {
-                deleteCollection(item.id);
-            });
+            div.querySelector(".load-btn").addEventListener("click", () => loadCollectionToForm(item));
+            div.querySelector(".edit-btn").addEventListener("click", () => editCollection(item));
+            div.querySelector(".delete-btn").addEventListener("click", () => deleteCollection(item.id));
 
             collectionsOutput.appendChild(div);
         });
     } catch (error) {
-        document.getElementById("collectionsOutput").innerHTML =
-            `<p>Error loading collections: ${error.message}</p>`;
+        document.getElementById("collectionsOutput").innerHTML = `<p>Error loading collections: ${error.message}</p>`;
+    }
+}
+
+async function exportCollections() {
+    try {
+        const response = await fetch(`${API_BASE}/collections/export`, {
+            headers: {
+                "Authorization": `Bearer ${localStorage.getItem("token")}`
+            }
+        });
+
+        const data = await response.json();
+
+        const blob = new Blob([JSON.stringify(data, null, 2)], {
+            type: "application/json"
+        });
+
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "collections-export.json";
+        a.click();
+        window.URL.revokeObjectURL(url);
+    } catch (error) {
+        alert("Export failed: " + error.message);
     }
 }
 
 function logoutUser() {
     localStorage.removeItem("loggedInUser");
+    localStorage.removeItem("token");
     clearResponseStorage();
     window.location.href = "login.html";
 }
@@ -414,43 +425,34 @@ window.addEventListener("DOMContentLoaded", () => {
     loadCollections();
     loadResponseFromStorage();
 
-    const sendBtn = document.getElementById("sendBtn");
-    const saveBtn = document.getElementById("saveBtn");
-    const logoutBtn = document.getElementById("logoutBtn");
-    const refreshHistoryBtn = document.getElementById("refreshHistoryBtn");
-    const refreshCollectionsBtn = document.getElementById("refreshCollectionsBtn");
-    const copyResponseBtn = document.getElementById("copyResponseBtn");
-    const clearResponseBtn = document.getElementById("clearResponseBtn");
-    const bodyTabBtn = document.getElementById("bodyTabBtn");
-    const fullTabBtn = document.getElementById("fullTabBtn");
+    document.getElementById("sendBtn").addEventListener("click", sendRequest);
+    document.getElementById("saveBtn").addEventListener("click", saveCollection);
+    document.getElementById("logoutBtn").addEventListener("click", logoutUser);
+    document.getElementById("refreshHistoryBtn").addEventListener("click", loadHistory);
+    document.getElementById("refreshCollectionsBtn").addEventListener("click", loadCollections);
+    document.getElementById("copyResponseBtn").addEventListener("click", copyResponse);
+    document.getElementById("clearResponseBtn").addEventListener("click", clearResponse);
+    document.getElementById("clearHistoryBtn").addEventListener("click", clearHistory);
+    document.getElementById("bodyTabBtn").addEventListener("click", () => switchTab("body"));
+    document.getElementById("fullTabBtn").addEventListener("click", () => switchTab("full"));
+
+    const exportBtn = document.getElementById("exportCollectionsBtn");
+    if (exportBtn) {
+        exportBtn.addEventListener("click", exportCollections);
+    }
+
     const urlInput = document.getElementById("url");
-    const userInfo = document.getElementById("userInfo");
+    urlInput.addEventListener("keydown", (event) => {
+        if (event.key === "Enter") {
+            event.preventDefault();
+            sendRequest(event);
+        }
+    });
+
+    document.getElementById("userInfo").textContent = `Logged in as: ${loggedInUser.username}`;
+
     const adminBtn = document.getElementById("adminBtn");
-
-    if (sendBtn) sendBtn.addEventListener("click", sendRequest);
-    if (saveBtn) saveBtn.addEventListener("click", saveCollection);
-    if (logoutBtn) logoutBtn.addEventListener("click", logoutUser);
-    if (refreshHistoryBtn) refreshHistoryBtn.addEventListener("click", loadHistory);
-    if (refreshCollectionsBtn) refreshCollectionsBtn.addEventListener("click", loadCollections);
-    if (copyResponseBtn) copyResponseBtn.addEventListener("click", copyResponse);
-    if (clearResponseBtn) clearResponseBtn.addEventListener("click", clearResponse);
-    if (bodyTabBtn) bodyTabBtn.addEventListener("click", () => switchTab("body"));
-    if (fullTabBtn) fullTabBtn.addEventListener("click", () => switchTab("full"));
-
-    if (urlInput) {
-        urlInput.addEventListener("keydown", (event) => {
-            if (event.key === "Enter") {
-                event.preventDefault();
-                sendRequest(event);
-            }
-        });
-    }
-
-    if (userInfo) {
-        userInfo.textContent = `Logged in as: ${loggedInUser.username}`;
-    }
-
-    if (adminBtn && loggedInUser.is_admin) {
+    if (loggedInUser.is_admin) {
         adminBtn.style.display = "inline-block";
         adminBtn.addEventListener("click", () => {
             window.location.href = "admin.html";

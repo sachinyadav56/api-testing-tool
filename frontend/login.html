@@ -31,12 +31,6 @@
         .auth-container {
             width: 100%;
             max-width: 400px;
-            animation: fadeIn 0.5s ease-out;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
         }
 
         .auth-card {
@@ -53,7 +47,7 @@
             font-size: 1.75rem;
         }
 
-        p.subtitle {
+        .subtitle {
             color: #6b7280;
             font-size: 0.9rem;
             margin-bottom: 2rem;
@@ -91,16 +85,12 @@
             cursor: pointer;
             transition: all 0.2s;
             margin-top: 0.5rem;
-        }
-
-        #mainBtn {
             background: var(--primary);
             color: white;
         }
 
-        #mainBtn:hover {
+        .btn:hover {
             background: var(--primary-hover);
-            transform: translateY(-1px);
         }
 
         .toggle-text {
@@ -125,12 +115,10 @@
         .error { color: #ef4444; }
         .success { color: #10b981; }
 
-        /* Hidden by default */
         #usernameField { display: none; }
     </style>
 </head>
 <body>
-
     <div class="auth-container">
         <div class="auth-card">
             <h1 id="formTitle">Welcome Back</h1>
@@ -160,7 +148,7 @@
     </div>
 
     <script>
-        const API_BASE = "http://127.0.0.1:5000";
+        const API_BASE = window.location.origin;
         let isLogin = true;
 
         const mainBtn = document.getElementById("mainBtn");
@@ -171,24 +159,31 @@
         const toggleQuestion = document.getElementById("toggleQuestion");
         const msg = document.getElementById("authMessage");
 
-        // UI Toggle Logic
         toggleAction.addEventListener("click", () => {
             isLogin = !isLogin;
             usernameField.style.display = isLogin ? "none" : "block";
             formTitle.textContent = isLogin ? "Welcome Back" : "Create Account";
-            formSubtitle.textContent = isLogin ? "Please enter your details to login." : "Join us to start using the API tool.";
+            formSubtitle.textContent = isLogin
+                ? "Please enter your details to login."
+                : "Join us to start using the API tool.";
             mainBtn.textContent = isLogin ? "Login" : "Register";
             toggleQuestion.textContent = isLogin ? "Don't have an account?" : "Already have an account?";
             toggleAction.textContent = isLogin ? "Register" : "Login";
             msg.textContent = "";
+            msg.className = "";
         });
 
-        // Combined Auth Logic
-        mainBtn.addEventListener("click", async () => {
+        async function submitAuth() {
             const username = document.getElementById("username").value.trim();
             const email = document.getElementById("email").value.trim();
             const password = document.getElementById("password").value.trim();
-            
+
+            if ((!isLogin && !username) || !email || !password) {
+                msg.textContent = "Please fill all required fields.";
+                msg.className = "error";
+                return;
+            }
+
             const endpoint = isLogin ? "/login" : "/register";
             const payload = isLogin ? { email, password } : { username, email, password };
 
@@ -198,7 +193,7 @@
             try {
                 const response = await fetch(`${API_BASE}${endpoint}`, {
                     method: "POST",
-                    headers: {"Content-Type": "application/json"},
+                    headers: { "Content-Type": "application/json" },
                     body: JSON.stringify(payload)
                 });
 
@@ -206,19 +201,28 @@
 
                 if (response.ok) {
                     if (isLogin && data.user) {
+                        localStorage.setItem("token", data.access_token);
                         localStorage.setItem("loggedInUser", JSON.stringify(data.user));
                         window.location.href = "index.html";
                     } else {
-                        msg.textContent = data.message || "Success! You can now login.";
+                        msg.textContent = data.message || "Registration successful. Please login.";
                         msg.className = "success";
                     }
                 } else {
-                    msg.textContent = data.error || data.message || "An error occurred";
+                    msg.textContent = data.error || "An error occurred";
                     msg.className = "error";
                 }
             } catch (err) {
                 msg.textContent = "Could not connect to server.";
                 msg.className = "error";
+            }
+        }
+
+        mainBtn.addEventListener("click", submitAuth);
+
+        document.addEventListener("keydown", (event) => {
+            if (event.key === "Enter") {
+                submitAuth();
             }
         });
     </script>

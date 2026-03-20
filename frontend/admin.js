@@ -1,7 +1,8 @@
-const API_BASE = "http://127.0.0.1:5000";
+const API_BASE = window.location.origin;
 const loggedInUser = JSON.parse(localStorage.getItem("loggedInUser"));
+const token = localStorage.getItem("token");
 
-if (!loggedInUser) {
+if (!loggedInUser || !token) {
     window.location.href = "login.html";
 }
 
@@ -12,41 +13,74 @@ if (!loggedInUser.is_admin) {
 
 document.getElementById("adminInfo").textContent = `Admin: ${loggedInUser.username}`;
 
+function authOnly() {
+    return {
+        "Authorization": `Bearer ${localStorage.getItem("token")}`
+    };
+}
+
+function authJson() {
+    return {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${localStorage.getItem("token")}`
+    };
+}
+
 async function loadUsers() {
     try {
-        const response = await fetch(`${API_BASE}/users`);
+        const response = await fetch(`${API_BASE}/users`, {
+            headers: authOnly()
+        });
         const users = await response.json();
 
-        const usersOutput = document.getElementById("usersOutput");
-        usersOutput.innerHTML = "";
+        const usersTableBody = document.getElementById("usersTableBody");
+        if (!usersTableBody) return;
+        usersTableBody.innerHTML = "";
 
-        if (!users.length) {
-            usersOutput.innerHTML = "<p>No users found.</p>";
+        if (!Array.isArray(users) || users.length === 0) {
+            usersTableBody.innerHTML = `
+                <tr>
+                    <td colspan="6">No users found.</td>
+                </tr>
+            `;
             return;
         }
 
         users.forEach(user => {
-            const div = document.createElement("div");
-            div.className = "collection-item";
+            const tr = document.createElement("tr");
 
-            div.innerHTML = `
-                <strong>${user.username}</strong><br>
-                <strong>Email:</strong> ${user.email}<br>
-                <strong>Admin:</strong> ${user.is_admin ? "Yes" : "No"}<br>
-                <strong>Created:</strong> ${user.created_at}
-                <div class="collection-actions">
-                    <button class="load-btn edit-user-btn">Edit</button>
-                    <button class="delete-user-btn">Delete</button>
-                </div>
+            tr.innerHTML = `
+                <td>${user.id}</td>
+                <td>${user.username}</td>
+                <td>${user.email}</td>
+                <td>
+                    <span class="${user.is_admin ? 'role-badge admin-role' : 'role-badge user-role'}">
+                        ${user.is_admin ? "Admin" : "User"}
+                    </span>
+                </td>
+                <td>${user.created_at}</td>
+                <td>
+                    <div class="table-actions">
+                        <button class="edit-btn edit-user-btn">Edit</button>
+                        <button class="delete-user-btn">Delete</button>
+                    </div>
+                </td>
             `;
 
-            div.querySelector(".edit-user-btn").addEventListener("click", () => editUser(user));
-            div.querySelector(".delete-user-btn").addEventListener("click", () => deleteUser(user.id));
+            tr.querySelector(".edit-user-btn").addEventListener("click", () => editUser(user));
+            tr.querySelector(".delete-user-btn").addEventListener("click", () => deleteUser(user.id));
 
-            usersOutput.appendChild(div);
+            usersTableBody.appendChild(tr);
         });
     } catch (error) {
-        document.getElementById("usersOutput").innerHTML = `<p>Error: ${error.message}</p>`;
+        const usersTableBody = document.getElementById("usersTableBody");
+        if (usersTableBody) {
+            usersTableBody.innerHTML = `
+                <tr>
+                    <td colspan="6">Error loading users: ${error.message}</td>
+                </tr>
+            `;
+        }
     }
 }
 
@@ -62,7 +96,7 @@ async function editUser(user) {
     try {
         const response = await fetch(`${API_BASE}/users/${user.id}`, {
             method: "PUT",
-            headers: { "Content-Type": "application/json" },
+            headers: authJson(),
             body: JSON.stringify({
                 username,
                 email,
@@ -83,12 +117,15 @@ async function deleteUser(userId) {
 
     try {
         const response = await fetch(`${API_BASE}/users/${userId}`, {
-            method: "DELETE"
+            method: "DELETE",
+            headers: authOnly()
         });
 
         const data = await response.json();
         alert(data.message || data.error);
         loadUsers();
+        loadHistory();
+        loadDashboardStats();
     } catch (error) {
         alert("Error deleting user: " + error.message);
     }
@@ -96,13 +133,15 @@ async function deleteUser(userId) {
 
 async function loadHistory() {
     try {
-        const response = await fetch(`${API_BASE}/history`);
+        const response = await fetch(`${API_BASE}/admin/history`, {
+            headers: authOnly()
+        });
         const data = await response.json();
 
         const historyOutput = document.getElementById("historyOutput");
         historyOutput.innerHTML = "";
 
-        if (!data.length) {
+        if (!Array.isArray(data) || data.length === 0) {
             historyOutput.innerHTML = "<p>No history found.</p>";
             return;
         }
@@ -112,15 +151,14 @@ async function loadHistory() {
             div.className = "history-item";
 
             div.innerHTML = `
-                <strong>${item.method}</strong> - ${item.url}<br>
-                <strong>Status:</strong> ${item.status_code}<br>
-                <strong>Date:</strong> ${item.created_at}
-                <div class="collection-actions">
-                    <button class="delete-history-btn">Delete</button>
+                <div class="item-top-row">
+                    <span class="method-badge method-${(item.method || "GET").toLowerCase()}">${item.method}</span>
+                    <span class="status-badge">${item.status_code ?? "-"}</span>
                 </div>
+                <div><strong>User:</strong> ${item.username || "Unknown"}</div>
+                <div class="item-url">${item.url}</div>
+                <div class="item-date"><strong>Date:</strong> ${item.created_at}</div>
             `;
-
-            div.querySelector(".delete-history-btn").addEventListener("click", () => deleteHistory(item.id));
 
             historyOutput.appendChild(div);
         });
@@ -129,45 +167,74 @@ async function loadHistory() {
     }
 }
 
-async function deleteHistory(historyId) {
-    if (!confirm("Delete this history item?")) return;
+let methodChartInstance = null;
 
-    try {
-        const response = await fetch(`${API_BASE}/history/${historyId}`, {
-            method: "DELETE"
-        });
+async function loadDashboardStats() {
+    const response = await fetch(`${API_BASE}/dashboard/stats`, {
+        headers: authOnly()
+    });
 
-        const data = await response.json();
-        alert(data.message || data.error);
-        loadHistory();
-    } catch (error) {
-        alert("Error deleting history: " + error.message);
+    const data = await response.json();
+
+    const statUsers = document.getElementById("statUsers");
+    const statRequests = document.getElementById("statRequests");
+    const statSuccess = document.getElementById("statSuccess");
+    const statRate = document.getElementById("statRate");
+
+    if (statUsers) statUsers.textContent = data.total_users;
+    if (statRequests) statRequests.textContent = data.total_requests;
+    if (statSuccess) statSuccess.textContent = data.success_requests;
+    if (statRate) statRate.textContent = `${data.success_rate}%`;
+
+    const chartCanvas = document.getElementById("methodChart");
+    if (!chartCanvas || typeof Chart === "undefined") return;
+
+    const ctx = chartCanvas.getContext("2d");
+
+    if (methodChartInstance) {
+        methodChartInstance.destroy();
     }
-}
 
-async function clearAllHistory() {
-    if (!confirm("Clear all history?")) return;
-
-    try {
-        const response = await fetch(`${API_BASE}/history/clear`, {
-            method: "DELETE"
-        });
-
-        const data = await response.json();
-        alert(data.message || data.error);
-        loadHistory();
-    } catch (error) {
-        alert("Error clearing history: " + error.message);
-    }
+    methodChartInstance = new Chart(ctx, {
+        type: "bar",
+        data: {
+            labels: data.methods.map(item => item.method),
+            datasets: [{
+                label: "Requests by Method",
+                data: data.methods.map(item => item.count)
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    labels: {
+                        color: "#e5e7eb"
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    ticks: { color: "#cbd5e1" },
+                    grid: { color: "#243041" }
+                },
+                y: {
+                    ticks: { color: "#cbd5e1" },
+                    grid: { color: "#243041" }
+                }
+            }
+        }
+    });
 }
 
 function logoutUser() {
     localStorage.removeItem("loggedInUser");
+    localStorage.removeItem("token");
     window.location.href = "login.html";
 }
 
 document.getElementById("refreshUsersBtn").addEventListener("click", loadUsers);
-document.getElementById("clearHistoryBtn").addEventListener("click", clearAllHistory);
+document.getElementById("refreshHistoryBtn").addEventListener("click", loadHistory);
 document.getElementById("logoutBtn").addEventListener("click", logoutUser);
 document.getElementById("goTesterBtn").addEventListener("click", () => {
     window.location.href = "index.html";
@@ -176,4 +243,5 @@ document.getElementById("goTesterBtn").addEventListener("click", () => {
 window.addEventListener("DOMContentLoaded", () => {
     loadUsers();
     loadHistory();
+    loadDashboardStats();
 });
