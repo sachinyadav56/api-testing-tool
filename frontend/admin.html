@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Panel - API Tool</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="app">
+        <header>
+            <h1>Admin Management Panel</h1>
+            <p id="adminInfo"></p>
+            <div style="display:flex; gap:10px;">
+                <button id="goTesterBtn" type="button">API Tester</button>
+                <button id="logoutBtn" type="button">Logout</button>
+            </div>
+        </header>
+
+        <div class="bottom-grid">
+            <div class="card">
+                <div class="section-head">
+                    <h2>Users</h2>
+                    <button id="refreshUsersBtn" type="button">Refresh</button>
+                </div>
+                <div id="usersOutput"></div>
+            </div>
+
+            <div class="card">
+                <div class="section-head">
+                    <h2>All History</h2>
+                    <button id="clearHistoryBtn" type="button">Clear All</button>
+                </div>
+                <div id="historyOutput"></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="admin.js"></script>
+</body>
+</html>

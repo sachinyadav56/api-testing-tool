@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API Management Tool</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="app">
+        <header>
+            <p id="userInfo"></p>
+<div class="header-actions">
+    <button type="button" id="adminBtn">Admin Panel</button>
+    <button type="button" id="logoutBtn">Logout</button>
+</div>
+        </header>
+
+        <div class="main-grid">
+            <div class="card">
+                <h2>Request Builder</h2>
+
+                <label for="method">Method</label>
+                <select id="method">
+                    <option>GET</option>
+                    <option>POST</option>
+                    <option>PUT</option>
+                    <option>DELETE</option>
+                    <option>PATCH</option>
+                </select>
+
+                <label for="url">API URL</label>
+                <input type="text" id="url" placeholder="Enter API URL">
+
+                <label for="headers">Headers (JSON)</label>
+                <textarea id="headers" placeholder='{"Content-Type":"application/json"}'></textarea>
+
+                <label for="body">Body (JSON)</label>
+                <textarea id="body" placeholder='{"name":"Sachin"}'></textarea>
+
+                <div class="button-group">
+                    <button type="button" id="sendBtn">Send Request</button>
+                    <button type="button" id="saveBtn">Save Collection</button>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="response-top">
+                    <h2>Response</h2>
+                    <div class="response-actions">
+                        <button type="button" id="copyResponseBtn">Copy</button>
+                        <button type="button" id="clearResponseBtn">Clear</button>
+                    </div>
+                </div>
+
+                <div class="response-meta">
+                    <div><strong>Status:</strong> <span id="statusCode">-</span></div>
+                    <div><strong>Time:</strong> <span id="responseTime">-</span></div>
+                </div>
+
+                <div class="tab-buttons">
+                    <button type="button" class="tab-btn active-tab" id="bodyTabBtn">Body</button>
+                    <button type="button" class="tab-btn" id="fullTabBtn">Full Response</button>
+                </div>
+
+                <pre id="responseOutput">Response will appear here...</pre>
+            </div>
+        </div>
+
+        <div class="bottom-grid">
+            <div class="card">
+                <div class="section-head">
+                    <h2>History</h2>
+                    <button type="button" id="refreshHistoryBtn">Refresh</button>
+                </div>
+                <div id="historyOutput"></div>
+            </div>
+
+            <div class="card">
+                <div class="section-head">
+                    <h2>Collections</h2>
+                    <button type="button" id="refreshCollectionsBtn">Refresh</button>
+                </div>
+                <div id="collectionsOutput"></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js?v=7"></script>
+</body>
+</html>

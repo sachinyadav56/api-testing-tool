@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - API Tool</title>
+    <style>
+        :root {
+            --primary: #6366f1;
+            --primary-hover: #4f46e5;
+            --bg-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --glass: rgba(255, 255, 255, 0.95);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', -apple-system, sans-serif;
+        }
+
+        body {
+            background: var(--bg-gradient);
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .auth-container {
+            width: 100%;
+            max-width: 400px;
+            animation: fadeIn 0.5s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .auth-card {
+            background: var(--glass);
+            padding: 2.5rem;
+            border-radius: 20px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
+            text-align: center;
+        }
+
+        h1 {
+            color: #1f2937;
+            margin-bottom: 0.5rem;
+            font-size: 1.75rem;
+        }
+
+        p.subtitle {
+            color: #6b7280;
+            font-size: 0.9rem;
+            margin-bottom: 2rem;
+        }
+
+        .input-group {
+            margin-bottom: 1.2rem;
+            text-align: left;
+        }
+
+        input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 1px solid #e5e7eb;
+            border-radius: 10px;
+            font-size: 1rem;
+            transition: all 0.2s;
+            background: #f9fafb;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: var(--primary);
+            background: #fff;
+            box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1);
+        }
+
+        .btn {
+            width: 100%;
+            padding: 12px;
+            border: none;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-top: 0.5rem;
+        }
+
+        #mainBtn {
+            background: var(--primary);
+            color: white;
+        }
+
+        #mainBtn:hover {
+            background: var(--primary-hover);
+            transform: translateY(-1px);
+        }
+
+        .toggle-text {
+            margin-top: 1.5rem;
+            font-size: 0.875rem;
+            color: #4b5563;
+        }
+
+        .toggle-link {
+            color: var(--primary);
+            text-decoration: none;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        #authMessage {
+            margin-top: 1rem;
+            font-size: 0.85rem;
+            min-height: 1.25rem;
+        }
+
+        .error { color: #ef4444; }
+        .success { color: #10b981; }
+
+        /* Hidden by default */
+        #usernameField { display: none; }
+    </style>
+</head>
+<body>
+
+    <div class="auth-container">
+        <div class="auth-card">
+            <h1 id="formTitle">Welcome Back</h1>
+            <p class="subtitle" id="formSubtitle">Please enter your details to login.</p>
+
+            <div id="usernameField" class="input-group">
+                <input type="text" id="username" placeholder="Username">
+            </div>
+
+            <div class="input-group">
+                <input type="email" id="email" placeholder="Email Address">
+            </div>
+
+            <div class="input-group">
+                <input type="password" id="password" placeholder="Password">
+            </div>
+
+            <button id="mainBtn" class="btn">Login</button>
+
+            <p id="authMessage"></p>
+
+            <p class="toggle-text">
+                <span id="toggleQuestion">Don't have an account?</span>
+                <span class="toggle-link" id="toggleAction">Register</span>
+            </p>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = "http://127.0.0.1:5000";
+        let isLogin = true;
+
+        const mainBtn = document.getElementById("mainBtn");
+        const toggleAction = document.getElementById("toggleAction");
+        const usernameField = document.getElementById("usernameField");
+        const formTitle = document.getElementById("formTitle");
+        const formSubtitle = document.getElementById("formSubtitle");
+        const toggleQuestion = document.getElementById("toggleQuestion");
+        const msg = document.getElementById("authMessage");
+
+        // UI Toggle Logic
+        toggleAction.addEventListener("click", () => {
+            isLogin = !isLogin;
+            usernameField.style.display = isLogin ? "none" : "block";
+            formTitle.textContent = isLogin ? "Welcome Back" : "Create Account";
+            formSubtitle.textContent = isLogin ? "Please enter your details to login." : "Join us to start using the API tool.";
+            mainBtn.textContent = isLogin ? "Login" : "Register";
+            toggleQuestion.textContent = isLogin ? "Don't have an account?" : "Already have an account?";
+            toggleAction.textContent = isLogin ? "Register" : "Login";
+            msg.textContent = "";
+        });
+
+        // Combined Auth Logic
+        mainBtn.addEventListener("click", async () => {
+            const username = document.getElementById("username").value.trim();
+            const email = document.getElementById("email").value.trim();
+            const password = document.getElementById("password").value.trim();
+            
+            const endpoint = isLogin ? "/login" : "/register";
+            const payload = isLogin ? { email, password } : { username, email, password };
+
+            msg.textContent = "Processing...";
+            msg.className = "";
+
+            try {
+                const response = await fetch(`${API_BASE}${endpoint}`, {
+                    method: "POST",
+                    headers: {"Content-Type": "application/json"},
+                    body: JSON.stringify(payload)
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    if (isLogin && data.user) {
+                        localStorage.setItem("loggedInUser", JSON.stringify(data.user));
+                        window.location.href = "index.html";
+                    } else {
+                        msg.textContent = data.message || "Success! You can now login.";
+                        msg.className = "success";
+                    }
+                } else {
+                    msg.textContent = data.error || data.message || "An error occurred";
+                    msg.className = "error";
+                }
+            } catch (err) {
+                msg.textContent = "Could not connect to server.";
+                msg.className = "error";
+            }
+        });
+    </script>
+</body>
+</html>
