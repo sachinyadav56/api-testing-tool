@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Users Management</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="admin-layout">
+    <aside class="sidebar">
+        <div>
+            <div class="sidebar-brand">
+                <h2>API Tool</h2>
+                <p>Admin Panel</p>
+            </div>
+
+            <nav class="sidebar-nav">
+                <a href="admin.html" class="nav-link">Dashboard</a>
+                <a href="users.html" class="nav-link active">Users</a>
+                <a href="cms.html" class="nav-link">CMS</a>
+                <a href="index.html" class="nav-link">API Tester</a>
+            </nav>
+        </div>
+
+        <button id="logoutBtn" class="sidebar-logout">Logout</button>
+    </aside>
+
+    <main class="admin-main">
+        <header class="topbar">
+            <h1>Users Management</h1>
+        </header>
+
+        <section class="card">
+            <div class="section-head">
+                <h2>All Users</h2>
+                <button id="refreshUsersBtn">Refresh</button>
+            </div>
+
+            <div class="table-wrapper">
+                <table class="admin-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Username</th>
+                            <th>Email</th>
+                            <th>Role</th>
+                            <th>Created</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="usersTableBody">
+                        <tr>
+                            <td colspan="6">Loading...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </main>
+</div>
+
+<script src="users.js"></script>
+</body>
+</html>

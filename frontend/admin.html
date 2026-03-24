@@ -3,90 +3,64 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Panel - API Tool</title>
+    <title>Admin Dashboard</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <div class="app">
-        <header>
-            <div>
-                <h1>Admin Management Panel</h1>
-                <p>Manage users and monitor API request activity.</p>
-                <p id="adminInfo"></p>
+<div class="admin-layout">
+    <aside class="sidebar">
+        <div>
+            <div class="sidebar-brand">
+                <h2>API Tool</h2>
+                <p>Admin Panel</p>
             </div>
 
-            <div class="header-actions">
-                <button id="goTesterBtn" type="button">API Tester</button>
-                <button id="logoutBtn" type="button">Logout</button>
+            <nav class="sidebar-nav">
+                <a href="admin.html" class="nav-link active">Dashboard</a>
+                <a href="users.html" class="nav-link">Users</a>
+                <a href="cms.html" class="nav-link">CMS</a>
+                <a href="index.html" class="nav-link">API Tester</a>
+            </nav>
+        </div>
+
+        <button id="logoutBtn" class="sidebar-logout">Logout</button>
+    </aside>
+
+    <main class="admin-main">
+        <header class="topbar">
+            <div>
+                <h1>Dashboard</h1>
+                <p id="adminInfo">Welcome Admin</p>
             </div>
         </header>
 
-        <div class="card">
-            <div class="section-head">
-                <h2>Dashboard</h2>
+        <section class="stats-grid">
+            <div class="stat-box">
+                <h3>Total Users</h3>
+                <p id="statUsers">0</p>
             </div>
-
-            <div class="stats-grid">
-                <div class="stat-box">
-                    <h3>Total Users</h3>
-                    <p id="statUsers">0</p>
-                </div>
-                <div class="stat-box">
-                    <h3>Total Requests</h3>
-                    <p id="statRequests">0</p>
-                </div>
-                <div class="stat-box">
-                    <h3>Successful Requests</h3>
-                    <p id="statSuccess">0</p>
-                </div>
-                <div class="stat-box">
-                    <h3>Success Rate</h3>
-                    <p id="statRate">0%</p>
-                </div>
+            <div class="stat-box">
+                <h3>Total Requests</h3>
+                <p id="statRequests">0</p>
             </div>
-
-            <canvas id="methodChart" height="110"></canvas>
-        </div>
-
-        <div class="bottom-grid">
-            <div class="card">
-                <div class="section-head">
-                    <h2>Users</h2>
-                    <button id="refreshUsersBtn" type="button">Refresh</button>
-                </div>
-
-                <div class="table-wrapper">
-                    <table class="admin-table">
-                        <thead>
-                            <tr>
-                                <th>ID</th>
-                                <th>Username</th>
-                                <th>Email</th>
-                                <th>Role</th>
-                                <th>Created At</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody id="usersTableBody">
-                            <tr>
-                                <td colspan="6">Loading users...</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
+            <div class="stat-box">
+                <h3>Success Requests</h3>
+                <p id="statSuccess">0</p>
             </div>
-
-            <div class="card">
-                <div class="section-head">
-                    <h2>All History</h2>
-                    <button id="refreshHistoryBtn" type="button">Refresh</button>
-                </div>
-                <div id="historyOutput"></div>
+            <div class="stat-box">
+                <h3>Success Rate</h3>
+                <p id="statRate">0%</p>
             </div>
-        </div>
-    </div>
+        </section>
 
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="admin.js"></script>
+        <section class="card">
+            <h2>Quick Overview</h2>
+            <p>Total Pages: <span id="statPages">0</span></p>
+            <p>Total Collections: <span id="statCollections">0</span></p>
+        </section>
+    </main>
+</div>
+
+<script src="admin.js"></script>
 </body>
 </html>

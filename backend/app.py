@@ -39,6 +39,29 @@ def init_db():
         cursor = conn.cursor()
 
         cursor.execute("""
+            CREATE TABLE IF NOT EXISTS site_settings (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                site_name TEXT,
+                site_description TEXT,
+                logo_url TEXT,
+                updated_at TEXT
+            )
+        """)
+
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS pages (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                title TEXT NOT NULL,
+                slug TEXT UNIQUE NOT NULL,
+                content TEXT NOT NULL,
+                status TEXT DEFAULT 'draft',
+                created_by INTEGER,
+                created_at TEXT,
+                updated_at TEXT
+            )
+        """)
+
+        cursor.execute("""
             CREATE TABLE IF NOT EXISTS users (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 username TEXT UNIQUE NOT NULL,
@@ -77,17 +100,17 @@ def init_db():
             )
         """)
 
-        cursor.execute("PRAGMA table_info(users)")
-        user_columns = [col["name"] for col in cursor.fetchall()]
-        if "is_admin" not in user_columns:
-            cursor.execute("ALTER TABLE users ADD COLUMN is_admin INTEGER DEFAULT 0")
-
-        cursor.execute("PRAGMA table_info(history)")
-        history_columns = [col["name"] for col in cursor.fetchall()]
-        if "user_id" not in history_columns:
-            cursor.execute("ALTER TABLE history ADD COLUMN user_id INTEGER")
-        if "response_time_ms" not in history_columns:
-            cursor.execute("ALTER TABLE history ADD COLUMN response_time_ms REAL")
+        cursor.execute("SELECT COUNT(*) AS total FROM site_settings")
+        if cursor.fetchone()["total"] == 0:
+            cursor.execute("""
+                INSERT INTO site_settings (site_name, site_description, logo_url, updated_at)
+                VALUES (?, ?, ?, ?)
+            """, (
+                "API Tool",
+                "API Testing and CMS Platform",
+                "",
+                datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            ))
 
         conn.commit()
 
@@ -134,6 +157,16 @@ def serve_index_page():
 @app.route("/admin.html")
 def serve_admin_page():
     return send_from_directory(FRONTEND_DIR, "admin.html")
+
+
+@app.route("/users.html")
+def serve_users_page():
+    return send_from_directory(FRONTEND_DIR, "users.html")
+
+
+@app.route("/cms.html")
+def serve_cms_page():
+    return send_from_directory(FRONTEND_DIR, "cms.html")
 
 
 @app.route("/<path:filename>")
@@ -234,7 +267,6 @@ def login():
                 "is_admin": bool(user["is_admin"])
             }
         })
-
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
@@ -250,7 +282,6 @@ def send_request():
     url = data.get("url", "").strip()
     headers = data.get("headers", {}) or {}
     body = data.get("body", {}) or {}
-    params = data.get("params", {}) or {}
 
     if not url:
         return jsonify({"error": "URL is required"}), 400
@@ -267,7 +298,6 @@ def send_request():
             "method": method,
             "url": url,
             "headers": headers,
-            "params": params,
             "timeout": 30
         }
 
@@ -275,21 +305,12 @@ def send_request():
             request_kwargs["json"] = body
 
         response = requests.request(**request_kwargs)
-
-        end_time = time.time()
-        response_time = round((end_time - start_time) * 1000, 2)
+        response_time = round((time.time() - start_time) * 1000, 2)
 
         try:
             response_content = response.json()
         except Exception:
             response_content = response.text
-
-        response_data = {
-            "status_code": response.status_code,
-            "response_time_ms": response_time,
-            "headers": dict(response.headers),
-            "response": response_content
-        }
 
         with get_db_connection() as conn:
             cursor = conn.cursor()
@@ -312,7 +333,12 @@ def send_request():
             ))
             conn.commit()
 
-        return jsonify(response_data)
+        return jsonify({
+            "status_code": response.status_code,
+            "response_time_ms": response_time,
+            "headers": dict(response.headers),
+            "response": response_content
+        })
 
     except requests.exceptions.RequestException as e:
         return jsonify({"error": f"Request failed: {str(e)}"}), 500
@@ -331,31 +357,7 @@ def get_history():
                 (current_user_id(),)
             )
             rows = cursor.fetchall()
-
         return jsonify([dict(row) for row in rows])
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-
-
-@app.route("/history/item/<int:history_id>", methods=["DELETE"])
-@jwt_required()
-def delete_history(history_id):
-    try:
-        with get_db_connection() as conn:
-            cursor = conn.cursor()
-            cursor.execute("SELECT * FROM history WHERE id = ?", (history_id,))
-            item = cursor.fetchone()
-
-            if not item:
-                return jsonify({"error": "History item not found"}), 404
-
-            if item["user_id"] != current_user_id() and not current_user_is_admin():
-                return jsonify({"error": "Unauthorized"}), 403
-
-            cursor.execute("DELETE FROM history WHERE id = ?", (history_id,))
-            conn.commit()
-
-        return jsonify({"message": "History deleted successfully"})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
@@ -368,7 +370,6 @@ def clear_history():
             cursor = conn.cursor()
             cursor.execute("DELETE FROM history WHERE user_id = ?", (current_user_id(),))
             conn.commit()
-
         return jsonify({"message": "History cleared successfully"})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
@@ -406,7 +407,6 @@ def save_collection():
                 datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             ))
             conn.commit()
-
         return jsonify({"message": "Collection saved successfully"})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
@@ -423,7 +423,6 @@ def get_collections():
                 (current_user_id(),)
             )
             rows = cursor.fetchall()
-
         return jsonify([dict(row) for row in rows])
     except Exception as e:
         return jsonify({"error": str(e)}), 500
@@ -502,33 +501,193 @@ def export_collections():
             )
             rows = cursor.fetchall()
 
-        items = []
+        export_data = []
         for row in rows:
-            items.append({
+            export_data.append({
                 "name": row["name"],
-                "request": {
-                    "method": row["method"],
-                    "header": [
-                        {"key": k, "value": str(v)}
-                        for k, v in parse_json_field(row["headers"], {}).items()
-                    ],
-                    "url": row["url"],
-                    "body": {
-                        "mode": "raw",
-                        "raw": json.dumps(parse_json_field(row["body"], {}), indent=2)
-                    }
-                }
+                "method": row["method"],
+                "url": row["url"],
+                "headers": parse_json_field(row["headers"], {}),
+                "body": parse_json_field(row["body"], {})
             })
 
-        export_data = {
-            "info": {
-                "name": f"{get_jwt().get('username', 'User')} Collections",
-                "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
-            },
-            "item": items
-        }
+        return jsonify({
+            "exported_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            "total": len(export_data),
+            "collections": export_data
+        })
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
-        return jsonify(export_data)
+
+@app.route("/collections/import", methods=["POST"])
+@jwt_required()
+def import_collections():
+    try:
+        data = request.get_json() or {}
+        collections = data.get("collections", [])
+
+        if not isinstance(collections, list) or len(collections) == 0:
+            return jsonify({"error": "No collections found to import"}), 400
+
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
+
+            for item in collections:
+                name = item.get("name", "").strip()
+                method = item.get("method", "GET").strip().upper()
+                url = item.get("url", "").strip()
+                headers = item.get("headers", {})
+                body = item.get("body", {})
+
+                if not name or not url:
+                    continue
+
+                cursor.execute("""
+                    INSERT INTO collections (user_id, name, method, url, headers, body, created_at)
+                    VALUES (?, ?, ?, ?, ?, ?, ?)
+                """, (
+                    current_user_id(),
+                    name,
+                    method,
+                    url,
+                    json.dumps(headers),
+                    json.dumps(body),
+                    datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                ))
+
+            conn.commit()
+
+        return jsonify({"message": "Collections imported successfully"})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+# ---------------- CMS ---------------- #
+
+@app.route("/cms/pages", methods=["GET"])
+@jwt_required()
+def get_pages():
+    if not current_user_is_admin():
+        return jsonify({"error": "Admin access required"}), 403
+
+    try:
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT * FROM pages ORDER BY id DESC")
+            rows = cursor.fetchall()
+        return jsonify([dict(row) for row in rows])
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/cms/pages", methods=["POST"])
+@jwt_required()
+def create_page():
+    if not current_user_is_admin():
+        return jsonify({"error": "Admin access required"}), 403
+
+    data = request.get_json() or {}
+    title = data.get("title", "").strip()
+    slug = data.get("slug", "").strip().lower()
+    content = data.get("content", "").strip()
+    status = data.get("status", "draft").strip().lower()
+
+    if not title or not slug or not content:
+        return jsonify({"error": "Title, slug and content are required"}), 400
+
+    try:
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                INSERT INTO pages (title, slug, content, status, created_by, created_at, updated_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+            """, (
+                title,
+                slug,
+                content,
+                status,
+                current_user_id(),
+                datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            ))
+            conn.commit()
+        return jsonify({"message": "Page created successfully"})
+    except sqlite3.IntegrityError:
+        return jsonify({"error": "Slug already exists"}), 400
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/cms/pages/<int:page_id>", methods=["PUT"])
+@jwt_required()
+def update_page(page_id):
+    if not current_user_is_admin():
+        return jsonify({"error": "Admin access required"}), 403
+
+    data = request.get_json() or {}
+    title = data.get("title", "").strip()
+    slug = data.get("slug", "").strip().lower()
+    content = data.get("content", "").strip()
+    status = data.get("status", "draft").strip().lower()
+
+    if not title or not slug or not content:
+        return jsonify({"error": "Title, slug and content are required"}), 400
+
+    try:
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                UPDATE pages
+                SET title = ?, slug = ?, content = ?, status = ?, updated_at = ?
+                WHERE id = ?
+            """, (
+                title,
+                slug,
+                content,
+                status,
+                datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                page_id
+            ))
+            conn.commit()
+        return jsonify({"message": "Page updated successfully"})
+    except sqlite3.IntegrityError:
+        return jsonify({"error": "Slug already exists"}), 400
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/cms/pages/<int:page_id>", methods=["DELETE"])
+@jwt_required()
+def delete_page(page_id):
+    if not current_user_is_admin():
+        return jsonify({"error": "Admin access required"}), 403
+
+    try:
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("DELETE FROM pages WHERE id = ?", (page_id,))
+            conn.commit()
+        return jsonify({"message": "Page deleted successfully"})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/cms/public/<slug>", methods=["GET"])
+def get_public_page(slug):
+    try:
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute(
+                "SELECT * FROM pages WHERE slug = ? AND status = 'published'",
+                (slug,)
+            )
+            page = cursor.fetchone()
+
+        if not page:
+            return jsonify({"error": "Page not found"}), 404
+
+        return jsonify(dict(page))
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
@@ -550,7 +709,6 @@ def get_users():
                 ORDER BY id DESC
             """)
             users = cursor.fetchall()
-
         return jsonify([dict(user) for user in users])
     except Exception as e:
         return jsonify({"error": str(e)}), 500
@@ -579,7 +737,6 @@ def update_user(user_id):
                 WHERE id = ?
             """, (username, email, is_admin, user_id))
             conn.commit()
-
         return jsonify({"message": "User updated successfully"})
     except sqlite3.IntegrityError:
         return jsonify({"error": "Username or email already exists"}), 400
@@ -601,32 +758,10 @@ def delete_user(user_id):
             cursor = conn.cursor()
             cursor.execute("DELETE FROM collections WHERE user_id = ?", (user_id,))
             cursor.execute("DELETE FROM history WHERE user_id = ?", (user_id,))
+            cursor.execute("DELETE FROM pages WHERE created_by = ?", (user_id,))
             cursor.execute("DELETE FROM users WHERE id = ?", (user_id,))
             conn.commit()
-
         return jsonify({"message": "User deleted successfully"})
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-
-
-@app.route("/admin/history", methods=["GET"])
-@jwt_required()
-def get_admin_history():
-    if not current_user_is_admin():
-        return jsonify({"error": "Admin access required"}), 403
-
-    try:
-        with get_db_connection() as conn:
-            cursor = conn.cursor()
-            cursor.execute("""
-                SELECT h.*, u.username
-                FROM history h
-                LEFT JOIN users u ON h.user_id = u.id
-                ORDER BY h.id DESC
-            """)
-            rows = cursor.fetchall()
-
-        return jsonify([dict(row) for row in rows])
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
@@ -638,51 +773,24 @@ def dashboard_stats():
         with get_db_connection() as conn:
             cursor = conn.cursor()
 
-            if current_user_is_admin():
-                cursor.execute("SELECT COUNT(*) AS total_users FROM users")
-                total_users = cursor.fetchone()["total_users"]
+            cursor.execute("SELECT COUNT(*) AS total_users FROM users")
+            total_users = cursor.fetchone()["total_users"]
 
-                cursor.execute("SELECT COUNT(*) AS total_requests FROM history")
-                total_requests = cursor.fetchone()["total_requests"]
+            cursor.execute("SELECT COUNT(*) AS total_requests FROM history")
+            total_requests = cursor.fetchone()["total_requests"]
 
-                cursor.execute("""
-                    SELECT COUNT(*) AS success_requests
-                    FROM history
-                    WHERE status_code BETWEEN 200 AND 299
-                """)
-                success_requests = cursor.fetchone()["success_requests"]
+            cursor.execute("""
+                SELECT COUNT(*) AS success_requests
+                FROM history
+                WHERE status_code BETWEEN 200 AND 299
+            """)
+            success_requests = cursor.fetchone()["success_requests"]
 
-                cursor.execute("""
-                    SELECT method, COUNT(*) AS count
-                    FROM history
-                    GROUP BY method
-                    ORDER BY count DESC
-                """)
-                methods = [dict(row) for row in cursor.fetchall()]
-            else:
-                total_users = 1
+            cursor.execute("SELECT COUNT(*) AS total_pages FROM pages")
+            total_pages = cursor.fetchone()["total_pages"]
 
-                cursor.execute(
-                    "SELECT COUNT(*) AS total_requests FROM history WHERE user_id = ?",
-                    (current_user_id(),)
-                )
-                total_requests = cursor.fetchone()["total_requests"]
-
-                cursor.execute("""
-                    SELECT COUNT(*) AS success_requests
-                    FROM history
-                    WHERE user_id = ? AND status_code BETWEEN 200 AND 299
-                """, (current_user_id(),))
-                success_requests = cursor.fetchone()["success_requests"]
-
-                cursor.execute("""
-                    SELECT method, COUNT(*) AS count
-                    FROM history
-                    WHERE user_id = ?
-                    GROUP BY method
-                    ORDER BY count DESC
-                """, (current_user_id(),))
-                methods = [dict(row) for row in cursor.fetchall()]
+            cursor.execute("SELECT COUNT(*) AS total_collections FROM collections")
+            total_collections = cursor.fetchone()["total_collections"]
 
         success_rate = round((success_requests / total_requests) * 100, 2) if total_requests else 0
 
@@ -691,7 +799,8 @@ def dashboard_stats():
             "total_requests": total_requests,
             "success_requests": success_requests,
             "success_rate": success_rate,
-            "methods": methods
+            "total_pages": total_pages,
+            "total_collections": total_collections
         })
     except Exception as e:
         return jsonify({"error": str(e)}), 500
