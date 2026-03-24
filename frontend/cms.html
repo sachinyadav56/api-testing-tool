@@ -7,32 +7,20 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<div class="admin-layout">
-    <aside class="sidebar">
-        <div>
-            <div class="sidebar-brand">
-                <h2>API Tool</h2>
-                <p>Admin Panel</p>
-            </div>
+<div class="admin-page-wrapper">
+    <div class="admin-container">
 
-            <nav class="sidebar-nav">
-                <a href="admin.html" class="nav-link">Dashboard</a>
-                <a href="users.html" class="nav-link">Users</a>
-                <a href="cms.html" class="nav-link active">CMS</a>
-                <a href="index.html" class="nav-link">API Tester</a>
-            </nav>
-        </div>
-
-        <button id="logoutBtn" class="sidebar-logout">Logout</button>
-    </aside>
-
-    <main class="admin-main">
-        <header class="topbar">
+        <div class="page-topbar">
             <div>
                 <h1>CMS Pages</h1>
-                <p>Create and manage dynamic content</p>
+                <p>Create and manage dynamic content pages</p>
             </div>
-        </header>
+
+            <div class="topbar-actions">
+                <button id="themeToggle" class="theme-btn">☀ Light</button>
+                <a href="admin.html" class="back-btn">← Dashboard</a>
+            </div>
+        </div>
 
         <section class="card">
             <h2>Create / Edit Page</h2>
@@ -61,11 +49,6 @@
         </section>
 
         <section class="card">
-            <div class="section-head">
-                <h2>All Pages</h2>
-                <button id="refreshPagesBtn" type="button">Refresh</button>
-            </div>
-
             <div class="table-wrapper">
                 <table class="admin-table">
                     <thead>
@@ -86,9 +69,11 @@
                 </table>
             </div>
         </section>
-    </main>
+
+    </div>
 </div>
 
+<script src="theme.js"></script>
 <script src="cms.js"></script>
 </body>
 </html>

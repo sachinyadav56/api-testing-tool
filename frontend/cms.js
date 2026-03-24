@@ -127,13 +127,8 @@ async function deletePage(pageId) {
     }
 }
 
-function logoutUser() {
-    localStorage.clear();
-    window.location.href = "login.html";
-}
-
-document.getElementById("savePageBtn").addEventListener("click", savePage);
-document.getElementById("resetPageBtn").addEventListener("click", resetForm);
-document.getElementById("refreshPagesBtn").addEventListener("click", loadPages);
-document.getElementById("logoutBtn").addEventListener("click", logoutUser);
-window.addEventListener("DOMContentLoaded", loadPages);
+window.addEventListener("DOMContentLoaded", () => {
+    loadPages();
+    document.getElementById("savePageBtn").addEventListener("click", savePage);
+    document.getElementById("resetPageBtn").addEventListener("click", resetForm);
+});

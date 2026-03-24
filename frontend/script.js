@@ -24,10 +24,21 @@ function authOnlyHeaders() {
     };
 }
 
+function parseJsonInput(text, fieldName) {
+    if (!text || !text.trim()) return {};
+    try {
+        return JSON.parse(text);
+    } catch {
+        throw new Error(`Invalid JSON in ${fieldName}`);
+    }
+}
+
 function renderActiveTab() {
     const responseEl = document.getElementById("responseOutput");
     const bodyTabBtn = document.getElementById("bodyTabBtn");
     const fullTabBtn = document.getElementById("fullTabBtn");
+
+    if (!responseEl || !bodyTabBtn || !fullTabBtn) return;
 
     if (activeTab === "body") {
         responseEl.innerText = currentBodyResponse;
@@ -51,24 +62,76 @@ function clearResponse() {
     currentBodyResponse = "Response will appear here...";
     currentFullResponse = "Full response will appear here...";
     renderActiveTab();
+    showToast("Response cleared", "info");
+}
+
+function clearRequestFields() {
+    document.getElementById("method").value = "GET";
+    document.getElementById("url").value = "";
+    document.getElementById("headers").value = "";
+    document.getElementById("body").value = "";
+}
+
+function ensureToastContainer() {
+    let container = document.getElementById("toastContainer");
+
+    if (!container) {
+        container = document.createElement("div");
+        container.id = "toastContainer";
+        container.className = "toast-container";
+        document.body.appendChild(container);
+    }
+
+    return container;
+}
+
+function showToast(message, type = "success") {
+    const container = ensureToastContainer();
+
+    const toast = document.createElement("div");
+    toast.className = `toast toast-${type}`;
+
+    const icon = document.createElement("span");
+    icon.className = "toast-icon";
+    icon.textContent =
+        type === "success" ? "✓" :
+        type === "error" ? "✕" :
+        type === "info" ? "i" : "!";
+
+    const text = document.createElement("span");
+    text.className = "toast-text";
+    text.textContent = message;
+
+    const closeBtn = document.createElement("button");
+    closeBtn.className = "toast-close";
+    closeBtn.innerHTML = "&times;";
+    closeBtn.onclick = () => {
+        toast.classList.remove("show");
+        setTimeout(() => toast.remove(), 250);
+    };
+
+    toast.appendChild(icon);
+    toast.appendChild(text);
+    toast.appendChild(closeBtn);
+    container.appendChild(toast);
+
+    requestAnimationFrame(() => {
+        toast.classList.add("show");
+    });
+
+    setTimeout(() => {
+        toast.classList.remove("show");
+        setTimeout(() => toast.remove(), 250);
+    }, 3000);
 }
 
 async function copyResponse() {
     try {
         const textToCopy = activeTab === "body" ? currentBodyResponse : currentFullResponse;
         await navigator.clipboard.writeText(textToCopy);
-        alert("Copied to clipboard");
+        showToast("Response copied", "success");
     } catch (error) {
-        alert("Copy failed: " + error.message);
-    }
-}
-
-function parseJsonInput(text, fieldName) {
-    if (!text || !text.trim()) return {};
-    try {
-        return JSON.parse(text);
-    } catch {
-        throw new Error(`Invalid JSON in ${fieldName}`);
+        showToast("Copy failed: " + error.message, "error");
     }
 }
 
@@ -77,7 +140,7 @@ async function sendRequest() {
     const url = document.getElementById("url").value.trim();
 
     if (!url) {
-        alert("Please enter API URL");
+        showToast("Please enter API URL", "error");
         return;
     }
 
@@ -88,7 +151,7 @@ async function sendRequest() {
         headers = parseJsonInput(document.getElementById("headers").value, "headers");
         body = parseJsonInput(document.getElementById("body").value, "body");
     } catch (error) {
-        alert(error.message);
+        showToast(error.message, "error");
         return;
     }
 
@@ -102,17 +165,27 @@ async function sendRequest() {
         const data = await response.json();
 
         document.getElementById("statusCode").textContent = data.status_code ?? "-";
-        document.getElementById("responseTime").textContent = data.response_time_ms ? `${data.response_time_ms} ms` : "-";
+        document.getElementById("responseTime").textContent = data.response_time_ms
+            ? `${data.response_time_ms} ms`
+            : "-";
 
         currentBodyResponse = typeof data.response === "object"
             ? JSON.stringify(data.response, null, 2)
             : String(data.response ?? "");
 
         currentFullResponse = JSON.stringify(data, null, 2);
+
         renderActiveTab();
-        loadHistory();
+        await loadHistory();
+
+        if (response.ok && !data.error) {
+            showToast("Request sent successfully", "success");
+            clearRequestFields();
+        } else {
+            showToast(data.error || "Request failed", "error");
+        }
     } catch (err) {
-        alert(err.message);
+        showToast("Request failed: " + err.message, "error");
     }
 }
 
@@ -124,9 +197,11 @@ async function loadHistory() {
 
         const data = await res.json();
         const container = document.getElementById("historyOutput");
+        if (!container) return;
+
         container.innerHTML = "";
 
-        if (!data.length) {
+        if (!Array.isArray(data) || data.length === 0) {
             container.innerHTML = "<p>No history</p>";
             return;
         }
@@ -142,19 +217,28 @@ async function loadHistory() {
             container.appendChild(div);
         });
     } catch (err) {
-        console.error(err);
+        const container = document.getElementById("historyOutput");
+        if (container) {
+            container.innerHTML = `<p>Error loading history: ${err.message}</p>`;
+        }
     }
 }
 
 async function clearHistory() {
     if (!confirm("Clear all your history?")) return;
 
-    await fetch(`${API_BASE}/history/clear`, {
-        method: "DELETE",
-        headers: authOnlyHeaders()
-    });
+    try {
+        const res = await fetch(`${API_BASE}/history/clear`, {
+            method: "DELETE",
+            headers: authOnlyHeaders()
+        });
 
-    loadHistory();
+        const data = await res.json();
+        showToast(data.message || data.error || "History cleared", res.ok ? "success" : "error");
+        await loadHistory();
+    } catch (err) {
+        showToast("Error clearing history: " + err.message, "error");
+    }
 }
 
 async function saveCollection() {
@@ -170,36 +254,48 @@ async function saveCollection() {
     try {
         headers = parseJsonInput(document.getElementById("headers").value, "headers");
         body = parseJsonInput(document.getElementById("body").value, "body");
-    } catch {
-        alert("Invalid JSON");
+    } catch (error) {
+        showToast(error.message, "error");
         return;
     }
 
-    await fetch(`${API_BASE}/save`, {
-        method: "POST",
-        headers: authHeaders(),
-        body: JSON.stringify({ name, method, url, headers, body })
-    });
+    try {
+        const res = await fetch(`${API_BASE}/save`, {
+            method: "POST",
+            headers: authHeaders(),
+            body: JSON.stringify({ name, method, url, headers, body })
+        });
 
-    loadCollections();
+        const data = await res.json();
+        showToast(data.message || data.error || "Collection saved", res.ok ? "success" : "error");
+        await loadCollections();
+    } catch (err) {
+        showToast("Error saving collection: " + err.message, "error");
+    }
 }
 
 function loadCollection(item) {
-    document.getElementById("method").value = item.method;
-    document.getElementById("url").value = item.url;
-    document.getElementById("headers").value = item.headers;
-    document.getElementById("body").value = item.body;
-}
+    document.getElementById("method").value = item.method || "GET";
+    document.getElementById("url").value = item.url || "";
 
-async function deleteCollection(id) {
-    if (!confirm("Delete?")) return;
+    try {
+        document.getElementById("headers").value = item.headers
+            ? JSON.stringify(JSON.parse(item.headers), null, 2)
+            : "";
+    } catch {
+        document.getElementById("headers").value = item.headers || "";
+    }
 
-    await fetch(`${API_BASE}/collections/item/${id}`, {
-        method: "DELETE",
-        headers: authOnlyHeaders()
-    });
+    try {
+        document.getElementById("body").value = item.body
+            ? JSON.stringify(JSON.parse(item.body), null, 2)
+            : "";
+    } catch {
+        document.getElementById("body").value = item.body || "";
+    }
 
-    loadCollections();
+    window.scrollTo({ top: 0, behavior: "smooth" });
+    showToast("Collection loaded into form", "success");
 }
 
 async function editCollection(item) {
@@ -217,94 +313,140 @@ async function editCollection(item) {
         body = {};
     }
 
-    await fetch(`${API_BASE}/collections/item/${item.id}`, {
-        method: "PUT",
-        headers: authHeaders(),
-        body: JSON.stringify({
-            name: newName,
-            method: item.method,
-            url: item.url,
-            headers,
-            body
-        })
-    });
+    try {
+        const res = await fetch(`${API_BASE}/collections/item/${item.id}`, {
+            method: "PUT",
+            headers: authHeaders(),
+            body: JSON.stringify({
+                name: newName,
+                method: item.method,
+                url: item.url,
+                headers,
+                body
+            })
+        });
 
-    loadCollections();
+        const data = await res.json();
+        showToast(data.message || data.error || "Collection updated", res.ok ? "success" : "error");
+        await loadCollections();
+    } catch (err) {
+        showToast("Error updating collection: " + err.message, "error");
+    }
+}
+
+async function deleteCollection(id) {
+    if (!confirm("Delete this collection?")) return;
+
+    try {
+        const res = await fetch(`${API_BASE}/collections/item/${id}`, {
+            method: "DELETE",
+            headers: authOnlyHeaders()
+        });
+
+        const data = await res.json();
+        showToast(data.message || data.error || "Collection deleted", res.ok ? "success" : "error");
+        await loadCollections();
+    } catch (err) {
+        showToast("Error deleting collection: " + err.message, "error");
+    }
 }
 
 async function loadCollections() {
-    const res = await fetch(`${API_BASE}/collections`, {
-        headers: authOnlyHeaders()
-    });
+    try {
+        const res = await fetch(`${API_BASE}/collections`, {
+            headers: authOnlyHeaders()
+        });
 
-    const data = await res.json();
-    const container = document.getElementById("collectionsOutput");
-    container.innerHTML = "";
+        const data = await res.json();
+        const container = document.getElementById("collectionsOutput");
+        if (!container) return;
 
-    if (!data.length) {
-        container.innerHTML = "<p>No collections found.</p>";
-        return;
+        container.innerHTML = "";
+
+        if (!Array.isArray(data) || data.length === 0) {
+            container.innerHTML = "<p>No collections found.</p>";
+            return;
+        }
+
+        data.forEach(item => {
+            const div = document.createElement("div");
+            div.className = "collection-item";
+
+            div.innerHTML = `
+                <strong>${item.name}</strong> (${item.method})<br>
+                ${item.url}
+                <div class="table-actions" style="margin-top:10px;">
+                    <button class="load-btn">Load</button>
+                    <button class="edit-btn">Edit</button>
+                    <button class="delete-btn">Delete</button>
+                </div>
+            `;
+
+            div.querySelector(".load-btn").addEventListener("click", () => loadCollection(item));
+            div.querySelector(".edit-btn").addEventListener("click", () => editCollection(item));
+            div.querySelector(".delete-btn").addEventListener("click", () => deleteCollection(item.id));
+
+            container.appendChild(div);
+        });
+    } catch (err) {
+        const container = document.getElementById("collectionsOutput");
+        if (container) {
+            container.innerHTML = `<p>Error loading collections: ${err.message}</p>`;
+        }
     }
-
-    data.forEach(item => {
-        const div = document.createElement("div");
-        div.className = "collection-item";
-
-        div.innerHTML = `
-            <strong>${item.name}</strong> (${item.method})<br>
-            ${item.url}
-            <div class="table-actions" style="margin-top:10px;">
-                <button class="load-btn">Load</button>
-                <button class="edit-btn">Edit</button>
-                <button class="delete-btn">Delete</button>
-            </div>
-        `;
-
-        div.querySelector(".load-btn").addEventListener("click", () => loadCollection(item));
-        div.querySelector(".edit-btn").addEventListener("click", () => editCollection(item));
-        div.querySelector(".delete-btn").addEventListener("click", () => deleteCollection(item.id));
-
-        container.appendChild(div);
-    });
 }
 
 async function exportCollections() {
-    const res = await fetch(`${API_BASE}/collections/export`, {
-        headers: authOnlyHeaders()
-    });
+    try {
+        const res = await fetch(`${API_BASE}/collections/export`, {
+            headers: authOnlyHeaders()
+        });
 
-    const data = await res.json();
+        const data = await res.json();
 
-    const blob = new Blob([JSON.stringify(data, null, 2)], {
-        type: "application/json"
-    });
+        const blob = new Blob([JSON.stringify(data, null, 2)], {
+            type: "application/json"
+        });
 
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(blob);
-    a.download = "collections.json";
-    a.click();
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(blob);
+        a.download = "collections.json";
+        a.click();
+
+        showToast("Collections exported", "success");
+    } catch (err) {
+        showToast("Export failed: " + err.message, "error");
+    }
 }
 
 function openImportDialog() {
-    document.getElementById("importFileInput").click();
+    const input = document.getElementById("importFileInput");
+    if (input) input.click();
 }
 
 async function importCollections(e) {
     const file = e.target.files[0];
     if (!file) return;
 
-    const text = await file.text();
-    const data = JSON.parse(text);
+    try {
+        const text = await file.text();
+        const data = JSON.parse(text);
 
-    await fetch(`${API_BASE}/collections/import`, {
-        method: "POST",
-        headers: authHeaders(),
-        body: JSON.stringify({
-            collections: data.collections || []
-        })
-    });
+        const res = await fetch(`${API_BASE}/collections/import`, {
+            method: "POST",
+            headers: authHeaders(),
+            body: JSON.stringify({
+                collections: data.collections || []
+            })
+        });
 
-    loadCollections();
+        const result = await res.json();
+        showToast(result.message || result.error || "Import completed", res.ok ? "success" : "error");
+        await loadCollections();
+    } catch (err) {
+        showToast("Import failed: " + err.message, "error");
+    }
+
     e.target.value = "";
 }
 
@@ -317,23 +459,39 @@ window.onload = () => {
     loadHistory();
     loadCollections();
 
-    document.getElementById("sendBtn").onclick = sendRequest;
-    document.getElementById("saveBtn").onclick = saveCollection;
-    document.getElementById("logoutBtn").onclick = logout;
-    document.getElementById("copyResponseBtn").onclick = copyResponse;
-    document.getElementById("clearResponseBtn").onclick = clearResponse;
-    document.getElementById("clearHistoryBtn").onclick = clearHistory;
-    document.getElementById("bodyTabBtn").onclick = () => switchTab("body");
-    document.getElementById("fullTabBtn").onclick = () => switchTab("full");
-    document.getElementById("exportCollectionsBtn").onclick = exportCollections;
-    document.getElementById("importCollectionsBtn").onclick = openImportDialog;
-    document.getElementById("importFileInput").onchange = importCollections;
-    document.getElementById("refreshCollectionsBtn").onclick = loadCollections;
+    const sendBtn = document.getElementById("sendBtn");
+    const saveBtn = document.getElementById("saveBtn");
+    const logoutBtn = document.getElementById("logoutBtn");
+    const copyResponseBtn = document.getElementById("copyResponseBtn");
+    const clearResponseBtn = document.getElementById("clearResponseBtn");
+    const clearHistoryBtn = document.getElementById("clearHistoryBtn");
+    const bodyTabBtn = document.getElementById("bodyTabBtn");
+    const fullTabBtn = document.getElementById("fullTabBtn");
+    const exportCollectionsBtn = document.getElementById("exportCollectionsBtn");
+    const importCollectionsBtn = document.getElementById("importCollectionsBtn");
+    const importFileInput = document.getElementById("importFileInput");
+    const refreshCollectionsBtn = document.getElementById("refreshCollectionsBtn");
+    const userInfo = document.getElementById("userInfo");
+    const adminBtn = document.getElementById("adminBtn");
 
-    document.getElementById("userInfo").innerText = "Logged in as: " + loggedInUser.username;
+    if (sendBtn) sendBtn.onclick = sendRequest;
+    if (saveBtn) saveBtn.onclick = saveCollection;
+    if (logoutBtn) logoutBtn.onclick = logout;
+    if (copyResponseBtn) copyResponseBtn.onclick = copyResponse;
+    if (clearResponseBtn) clearResponseBtn.onclick = clearResponse;
+    if (clearHistoryBtn) clearHistoryBtn.onclick = clearHistory;
+    if (bodyTabBtn) bodyTabBtn.onclick = () => switchTab("body");
+    if (fullTabBtn) fullTabBtn.onclick = () => switchTab("full");
+    if (exportCollectionsBtn) exportCollectionsBtn.onclick = exportCollections;
+    if (importCollectionsBtn) importCollectionsBtn.onclick = openImportDialog;
+    if (importFileInput) importFileInput.onchange = importCollections;
+    if (refreshCollectionsBtn) refreshCollectionsBtn.onclick = loadCollections;
 
-    if (loggedInUser.is_admin) {
-        const adminBtn = document.getElementById("adminBtn");
+    if (userInfo) {
+        userInfo.innerText = "Logged in as: " + loggedInUser.username;
+    }
+
+    if (loggedInUser.is_admin && adminBtn) {
         adminBtn.style.display = "inline-block";
         adminBtn.onclick = () => {
             window.location.href = "admin.html";

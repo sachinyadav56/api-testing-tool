@@ -7,32 +7,24 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<div class="admin-layout">
-    <aside class="sidebar">
-        <div>
-            <div class="sidebar-brand">
-                <h2>API Tool</h2>
-                <p>Admin Panel</p>
-            </div>
+<div class="admin-page-wrapper">
+    <div class="admin-container">
 
-            <nav class="sidebar-nav">
-                <a href="admin.html" class="nav-link active">Dashboard</a>
-                <a href="users.html" class="nav-link">Users</a>
-                <a href="cms.html" class="nav-link">CMS</a>
-                <a href="index.html" class="nav-link">API Tester</a>
-            </nav>
-        </div>
-
-        <button id="logoutBtn" class="sidebar-logout">Logout</button>
-    </aside>
-
-    <main class="admin-main">
-        <header class="topbar">
+        <div class="page-topbar">
             <div>
-                <h1>Dashboard</h1>
+                <h1>Admin Dashboard</h1>
                 <p id="adminInfo">Welcome Admin</p>
             </div>
-        </header>
+            <div class="topbar-actions">
+                <button id="themeToggle" class="theme-btn">☀ Light</button>
+                <button id="logoutBtn" class="danger-btn">Logout</button>
+            </div>
+        </div>
+
+        <section class="hero-card">
+            <h2>Manage your complete API platform</h2>
+            <p>Users, CMS, collections, history and testing — all from one place.</p>
+        </section>
 
         <section class="stats-grid">
             <div class="stat-box">
@@ -53,14 +45,50 @@
             </div>
         </section>
 
-        <section class="card">
-            <h2>Quick Overview</h2>
-            <p>Total Pages: <span id="statPages">0</span></p>
-            <p>Total Collections: <span id="statCollections">0</span></p>
+        <section class="quick-links-grid">
+            <a href="users.html" class="quick-card">
+                <h3>Manage Users</h3>
+                <p>Create, update and remove users</p>
+            </a>
+
+            <a href="cms.html" class="quick-card">
+                <h3>CMS Pages</h3>
+                <p>Create and manage dynamic pages</p>
+            </a>
+
+            <a href="collections.html" class="quick-card">
+                <h3>Collections</h3>
+                <p>View all saved collections</p>
+            </a>
+
+            <a href="history.html" class="quick-card">
+                <h3>History</h3>
+                <p>Monitor request logs</p>
+            </a>
+
+            <a href="index.html" class="quick-card">
+                <h3>API Tester</h3>
+                <p>Open testing workspace</p>
+            </a>
         </section>
-    </main>
+
+        <section class="card">
+            <div class="overview-list">
+                <div class="overview-item">
+                    <span>Total Pages</span>
+                    <strong id="statPages">0</strong>
+                </div>
+                <div class="overview-item">
+                    <span>Total Collections</span>
+                    <strong id="statCollections">0</strong>
+                </div>
+            </div>
+        </section>
+
+    </div>
 </div>
 
+<script src="theme.js"></script>
 <script src="admin.js"></script>
 </body>
 </html>

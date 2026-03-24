@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Collections</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="admin-page-wrapper">
+    <div class="admin-container">
+
+        <div class="page-topbar">
+            <div>
+                <h1>Collections</h1>
+                <p>All users collections including admin</p>
+            </div>
+
+            <div class="topbar-actions">
+                <button id="themeToggle" class="theme-btn">☀ Light</button>
+                <a href="admin.html" class="back-btn">← Dashboard</a>
+                <button id="deleteSelectedCollectionsBtn" class="danger-btn">Delete Selected</button>
+            </div>
+        </div>
+
+        <section class="card">
+            <div class="table-wrapper">
+                <table class="admin-table">
+                    <thead>
+                        <tr>
+                            <th><input type="checkbox" id="selectAllCollections"></th>
+                            <th>User</th>
+                            <th>Method</th>
+                            <th>URL</th>
+                            <th>Date</th>
+                        </tr>
+                    </thead>
+                    <tbody id="collectionsTableBody">
+                        <tr>
+                            <td colspan="5">Loading collections...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+    </div>
+</div>
+
+<script src="theme.js"></script>
+<script src="collections.js"></script>
+</body>
+</html>

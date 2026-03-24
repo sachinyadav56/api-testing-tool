@@ -3,40 +3,28 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Users Management</title>
+    <title>Manage Users</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<div class="admin-layout">
-    <aside class="sidebar">
-        <div>
-            <div class="sidebar-brand">
-                <h2>API Tool</h2>
-                <p>Admin Panel</p>
+<div class="admin-page-wrapper">
+    <div class="admin-container">
+
+        <div class="page-topbar">
+            <div>
+                <h1>Users Management</h1>
+                <p>Manage all registered users</p>
             </div>
 
-            <nav class="sidebar-nav">
-                <a href="admin.html" class="nav-link">Dashboard</a>
-                <a href="users.html" class="nav-link active">Users</a>
-                <a href="cms.html" class="nav-link">CMS</a>
-                <a href="index.html" class="nav-link">API Tester</a>
-            </nav>
+            <div class="topbar-actions">
+                <button id="themeToggle" class="theme-btn">☀ Light</button>
+                <a href="admin.html" class="back-btn">← Dashboard</a>
+                <button id="refreshUsersBtn">Refresh</button>
+                <button id="logoutBtn" class="danger-btn">Logout</button>
+            </div>
         </div>
 
-        <button id="logoutBtn" class="sidebar-logout">Logout</button>
-    </aside>
-
-    <main class="admin-main">
-        <header class="topbar">
-            <h1>Users Management</h1>
-        </header>
-
         <section class="card">
-            <div class="section-head">
-                <h2>All Users</h2>
-                <button id="refreshUsersBtn">Refresh</button>
-            </div>
-
             <div class="table-wrapper">
                 <table class="admin-table">
                     <thead>
@@ -51,15 +39,17 @@
                     </thead>
                     <tbody id="usersTableBody">
                         <tr>
-                            <td colspan="6">Loading...</td>
+                            <td colspan="6">Loading users...</td>
                         </tr>
                     </tbody>
                 </table>
             </div>
         </section>
-    </main>
+
+    </div>
 </div>
 
+<script src="theme.js"></script>
 <script src="users.js"></script>
 </body>
 </html>

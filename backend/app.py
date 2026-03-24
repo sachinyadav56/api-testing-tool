@@ -169,6 +169,16 @@ def serve_cms_page():
     return send_from_directory(FRONTEND_DIR, "cms.html")
 
 
+@app.route("/collections.html")
+def serve_collections_page():
+    return send_from_directory(FRONTEND_DIR, "collections.html")
+
+
+@app.route("/history.html")
+def serve_history_page():
+    return send_from_directory(FRONTEND_DIR, "history.html")
+
+
 @app.route("/<path:filename>")
 def serve_static_file(filename):
     file_path = os.path.join(FRONTEND_DIR, filename)
@@ -346,6 +356,8 @@ def send_request():
         return jsonify({"error": str(e)}), 500
 
 
+# ---------------- USER HISTORY ---------------- #
+
 @app.route("/history", methods=["GET"])
 @jwt_required()
 def get_history():
@@ -375,7 +387,7 @@ def clear_history():
         return jsonify({"error": str(e)}), 500
 
 
-# ---------------- COLLECTIONS ---------------- #
+# ---------------- USER COLLECTIONS ---------------- #
 
 @app.route("/save", methods=["POST"])
 @jwt_required()
@@ -762,6 +774,96 @@ def delete_user(user_id):
             cursor.execute("DELETE FROM users WHERE id = ?", (user_id,))
             conn.commit()
         return jsonify({"message": "User deleted successfully"})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/admin/history", methods=["GET"])
+@jwt_required()
+def admin_get_all_history():
+    if not current_user_is_admin():
+        return jsonify({"error": "Admin access required"}), 403
+
+    try:
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                SELECT h.id, h.method, h.url, h.status_code, h.created_at, u.username
+                FROM history h
+                LEFT JOIN users u ON h.user_id = u.id
+                ORDER BY h.id DESC
+            """)
+            rows = cursor.fetchall()
+        return jsonify([dict(row) for row in rows])
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/admin/history/delete", methods=["POST"])
+@jwt_required()
+def admin_delete_selected_history():
+    if not current_user_is_admin():
+        return jsonify({"error": "Admin access required"}), 403
+
+    data = request.get_json() or {}
+    ids = data.get("ids", [])
+
+    if not isinstance(ids, list) or len(ids) == 0:
+        return jsonify({"error": "No history ids provided"}), 400
+
+    try:
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
+            placeholders = ",".join(["?"] * len(ids))
+            cursor.execute(f"DELETE FROM history WHERE id IN ({placeholders})", ids)
+            conn.commit()
+
+        return jsonify({"message": "Selected history deleted successfully"})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/admin/collections", methods=["GET"])
+@jwt_required()
+def admin_get_all_collections():
+    if not current_user_is_admin():
+        return jsonify({"error": "Admin access required"}), 403
+
+    try:
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                SELECT c.id, c.method, c.url, c.created_at, u.username
+                FROM collections c
+                LEFT JOIN users u ON c.user_id = u.id
+                ORDER BY c.id DESC
+            """)
+            rows = cursor.fetchall()
+        return jsonify([dict(row) for row in rows])
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/admin/collections/delete", methods=["POST"])
+@jwt_required()
+def admin_delete_selected_collections():
+    if not current_user_is_admin():
+        return jsonify({"error": "Admin access required"}), 403
+
+    data = request.get_json() or {}
+    ids = data.get("ids", [])
+
+    if not isinstance(ids, list) or len(ids) == 0:
+        return jsonify({"error": "No collection ids provided"}), 400
+
+    try:
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
+            placeholders = ",".join(["?"] * len(ids))
+            cursor.execute(f"DELETE FROM collections WHERE id IN ({placeholders})", ids)
+            conn.commit()
+
+        return jsonify({"message": "Selected collections deleted successfully"})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
