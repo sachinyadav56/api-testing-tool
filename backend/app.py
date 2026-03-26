@@ -140,9 +140,24 @@ def serve_admin_page():
     return send_from_directory(FRONTEND_DIR, "admin.html")
 
 
+@app.route("/users.html")
+def serve_users_page():
+    return send_from_directory(FRONTEND_DIR, "users.html")
+
+
 @app.route("/cms.html")
 def serve_cms_page():
     return send_from_directory(FRONTEND_DIR, "cms.html")
+
+
+@app.route("/history.html")
+def serve_history_page():
+    return send_from_directory(FRONTEND_DIR, "history.html")
+
+
+@app.route("/collections.html")
+def serve_collections_page():
+    return send_from_directory(FRONTEND_DIR, "collections.html")
 
 
 @app.route("/page/<slug>")
@@ -320,6 +335,8 @@ def send_request():
         return jsonify({"error": str(e)}), 500
 
 
+# ---------------- USER HISTORY ---------------- #
+
 @app.route("/history", methods=["GET"])
 @jwt_required()
 def get_history():
@@ -349,7 +366,7 @@ def clear_history():
         return jsonify({"error": str(e)}), 500
 
 
-# ---------------- COLLECTIONS ---------------- #
+# ---------------- USER COLLECTIONS ---------------- #
 
 @app.route("/save", methods=["POST"])
 @jwt_required()
@@ -398,6 +415,67 @@ def get_collections():
             )
             rows = cursor.fetchall()
         return jsonify([dict(row) for row in rows])
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/collections/item/<int:collection_id>", methods=["PUT"])
+@jwt_required()
+def update_collection(collection_id):
+    data = request.get_json() or {}
+
+    name = data.get("name", "").strip()
+    method = data.get("method", "").strip().upper()
+    url = data.get("url", "").strip()
+    headers = json.dumps(data.get("headers", {}) or {})
+    body = json.dumps(data.get("body", {}) or {})
+
+    if not name or not method or not url:
+        return jsonify({"error": "Name, method and URL are required"}), 400
+
+    try:
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT user_id FROM collections WHERE id = ?", (collection_id,))
+            item = cursor.fetchone()
+
+            if not item:
+                return jsonify({"error": "Collection not found"}), 404
+
+            if item["user_id"] != current_user_id() and not current_user_is_admin():
+                return jsonify({"error": "Unauthorized"}), 403
+
+            cursor.execute("""
+                UPDATE collections
+                SET name = ?, method = ?, url = ?, headers = ?, body = ?
+                WHERE id = ?
+            """, (name, method, url, headers, body, collection_id))
+            conn.commit()
+
+        return jsonify({"message": "Collection updated successfully"})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/collections/item/<int:collection_id>", methods=["DELETE"])
+@jwt_required()
+def delete_collection(collection_id):
+    try:
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT user_id FROM collections WHERE id = ?", (collection_id,))
+            item = cursor.fetchone()
+
+            if not item:
+                return jsonify({"error": "Collection not found"}), 404
+
+            if item["user_id"] != current_user_id() and not current_user_is_admin():
+                return jsonify({"error": "Unauthorized"}), 403
+
+            cursor.execute("DELETE FROM collections WHERE id = ?", (collection_id,))
+            conn.commit()
+
+        return jsonify({"message": "Collection deleted successfully"})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
@@ -605,6 +683,172 @@ def get_public_page_data(slug):
             return jsonify({"error": "Page not found"}), 404
 
         return jsonify(dict(page))
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+# ---------------- ADMIN USERS ---------------- #
+
+@app.route("/users", methods=["GET"])
+@jwt_required()
+def get_users():
+    if not current_user_is_admin():
+        return jsonify({"error": "Admin access required"}), 403
+
+    try:
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                SELECT id, username, email, is_admin, created_at
+                FROM users
+                ORDER BY id DESC
+            """)
+            rows = cursor.fetchall()
+        return jsonify([dict(row) for row in rows])
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/users/<int:user_id>", methods=["PUT"])
+@jwt_required()
+def update_user(user_id):
+    if not current_user_is_admin():
+        return jsonify({"error": "Admin access required"}), 403
+
+    data = request.get_json() or {}
+    username = data.get("username", "").strip()
+    email = data.get("email", "").strip().lower()
+    is_admin = 1 if data.get("is_admin") else 0
+
+    if not username or not email:
+        return jsonify({"error": "Username and email are required"}), 400
+
+    try:
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                UPDATE users
+                SET username = ?, email = ?, is_admin = ?
+                WHERE id = ?
+            """, (username, email, is_admin, user_id))
+            conn.commit()
+        return jsonify({"message": "User updated successfully"})
+    except sqlite3.IntegrityError:
+        return jsonify({"error": "Username or email already exists"}), 400
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/users/<int:user_id>", methods=["DELETE"])
+@jwt_required()
+def delete_user(user_id):
+    if not current_user_is_admin():
+        return jsonify({"error": "Admin access required"}), 403
+
+    if current_user_id() == user_id:
+        return jsonify({"error": "Admin cannot delete own account"}), 400
+
+    try:
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("DELETE FROM collections WHERE user_id = ?", (user_id,))
+            cursor.execute("DELETE FROM history WHERE user_id = ?", (user_id,))
+            cursor.execute("DELETE FROM pages WHERE created_by = ?", (user_id,))
+            cursor.execute("DELETE FROM users WHERE id = ?", (user_id,))
+            conn.commit()
+        return jsonify({"message": "User deleted successfully"})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+# ---------------- ADMIN HISTORY ---------------- #
+
+@app.route("/admin/history", methods=["GET"])
+@jwt_required()
+def admin_get_history():
+    if not current_user_is_admin():
+        return jsonify({"error": "Admin access required"}), 403
+
+    try:
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                SELECT h.id, h.method, h.url, h.status_code, h.created_at, u.username
+                FROM history h
+                LEFT JOIN users u ON h.user_id = u.id
+                ORDER BY h.id DESC
+            """)
+            rows = cursor.fetchall()
+        return jsonify([dict(row) for row in rows])
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/admin/history/delete", methods=["POST"])
+@jwt_required()
+def admin_delete_history():
+    if not current_user_is_admin():
+        return jsonify({"error": "Admin access required"}), 403
+
+    data = request.get_json() or {}
+    ids = data.get("ids", [])
+
+    if not isinstance(ids, list) or len(ids) == 0:
+        return jsonify({"error": "No history ids provided"}), 400
+
+    try:
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
+            placeholders = ",".join(["?"] * len(ids))
+            cursor.execute(f"DELETE FROM history WHERE id IN ({placeholders})", ids)
+            conn.commit()
+        return jsonify({"message": "Selected history deleted successfully"})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+# ---------------- ADMIN COLLECTIONS ---------------- #
+
+@app.route("/admin/collections", methods=["GET"])
+@jwt_required()
+def admin_get_collections():
+    if not current_user_is_admin():
+        return jsonify({"error": "Admin access required"}), 403
+
+    try:
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                SELECT c.id, c.method, c.url, c.created_at, u.username
+                FROM collections c
+                LEFT JOIN users u ON c.user_id = u.id
+                ORDER BY c.id DESC
+            """)
+            rows = cursor.fetchall()
+        return jsonify([dict(row) for row in rows])
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/admin/collections/delete", methods=["POST"])
+@jwt_required()
+def admin_delete_collections():
+    if not current_user_is_admin():
+        return jsonify({"error": "Admin access required"}), 403
+
+    data = request.get_json() or {}
+    ids = data.get("ids", [])
+
+    if not isinstance(ids, list) or len(ids) == 0:
+        return jsonify({"error": "No collection ids provided"}), 400
+
+    try:
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
+            placeholders = ",".join(["?"] * len(ids))
+            cursor.execute(f"DELETE FROM collections WHERE id IN ({placeholders})", ids)
+            conn.commit()
+        return jsonify({"message": "Selected collections deleted successfully"})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
