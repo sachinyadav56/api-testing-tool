@@ -13,15 +13,128 @@ function authHeaders() {
     };
 }
 
+function showCmsToast(message, type = "success") {
+    let box = document.getElementById("cmsToast");
+
+    if (!box) {
+        box = document.createElement("div");
+        box.id = "cmsToast";
+        box.style.position = "fixed";
+        box.style.top = "20px";
+        box.style.right = "20px";
+        box.style.zIndex = "9999";
+        box.style.padding = "12px 16px";
+        box.style.borderRadius = "12px";
+        box.style.color = "#fff";
+        box.style.fontWeight = "600";
+        document.body.appendChild(box);
+    }
+
+    box.textContent = message;
+    box.style.background = type === "success" ? "#16a34a" : "#dc2626";
+    box.style.display = "block";
+
+    setTimeout(() => {
+        box.style.display = "none";
+    }, 3000);
+}
+
+function safeGetEditorData() {
+    const text = document.getElementById("pageContent").value.trim();
+    if (!text) return { sections: [] };
+
+    const parsed = JSON.parse(text);
+    if (!parsed.sections || !Array.isArray(parsed.sections)) {
+        return { sections: [] };
+    }
+    return parsed;
+}
+
+function setEditorData(data) {
+    document.getElementById("pageContent").value = JSON.stringify(data, null, 2);
+}
+
+function resetForm() {
+    document.getElementById("pageId").value = "";
+    document.getElementById("pageTitle").value = "";
+    document.getElementById("pageSlug").value = "";
+    document.getElementById("pageStatus").value = "draft";
+    setEditorData({ sections: [] });
+}
+
+function appendSection(section) {
+    try {
+        const data = safeGetEditorData();
+        data.sections.push(section);
+        setEditorData(data);
+        showCmsToast("Section inserted", "success");
+    } catch (error) {
+        showCmsToast("Invalid JSON in editor", "error");
+    }
+}
+
+function insertHeroSection() {
+    appendSection({
+        type: "hero",
+        badge: "Premium API Platform",
+        heading: "Build, test and scale APIs faster",
+        subheading: "A premium API workspace inspired by modern cloud tools.",
+        primaryButton: { text: "Get Started", link: "/login.html" },
+        secondaryButton: { text: "Explore Features", link: "/page/home" }
+    });
+}
+
+function insertStatsSection() {
+    appendSection({
+        type: "stats",
+        items: [
+            { value: "99.9%", label: "Uptime" },
+            { value: "10K+", label: "Requests Tested" },
+            { value: "500+", label: "Collections" },
+            { value: "24/7", label: "Monitoring" }
+        ]
+    });
+}
+
+function insertFeaturesSection() {
+    appendSection({
+        type: "features",
+        heading: "Everything in one platform",
+        subheading: "Built for developers and teams",
+        items: [
+            {
+                title: "Smart API Testing",
+                description: "Test endpoints quickly with request builder and history."
+            },
+            {
+                title: "Dynamic CMS",
+                description: "Publish premium-looking pages directly from admin panel."
+            },
+            {
+                title: "Admin Control",
+                description: "Manage users, collections and logs easily."
+            }
+        ]
+    });
+}
+
+function formatJson() {
+    try {
+        const data = safeGetEditorData();
+        setEditorData(data);
+        showCmsToast("JSON formatted", "success");
+    } catch (error) {
+        showCmsToast("Invalid JSON", "error");
+    }
+}
+
 async function loadPages() {
     try {
         const response = await fetch(`${API_BASE}/cms/pages`, {
-            headers: {
-                "Authorization": `Bearer ${token}`
-            }
+            headers: { "Authorization": `Bearer ${token}` }
         });
-
         const data = await response.json();
+
         const tbody = document.getElementById("pagesTableBody");
         tbody.innerHTML = "";
 
@@ -62,15 +175,8 @@ function fillForm(page) {
     document.getElementById("pageTitle").value = page.title;
     document.getElementById("pageSlug").value = page.slug;
     document.getElementById("pageStatus").value = page.status;
-    document.getElementById("pageContent").value = page.content;
-}
-
-function resetForm() {
-    document.getElementById("pageId").value = "";
-    document.getElementById("pageTitle").value = "";
-    document.getElementById("pageSlug").value = "";
-    document.getElementById("pageStatus").value = "draft";
-    document.getElementById("pageContent").value = "";
+    document.getElementById("pageContent").value = page.content || '{\n  "sections": []\n}';
+    window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
 async function savePage() {
@@ -81,7 +187,14 @@ async function savePage() {
     const content = document.getElementById("pageContent").value.trim();
 
     if (!title || !slug || !content) {
-        alert("Please fill all fields");
+        showCmsToast("Please fill all fields", "error");
+        return;
+    }
+
+    try {
+        JSON.parse(content);
+    } catch (error) {
+        showCmsToast("Content JSON is invalid", "error");
         return;
     }
 
@@ -97,14 +210,16 @@ async function savePage() {
         });
 
         const data = await response.json();
-        alert(data.message || data.error);
 
         if (response.ok) {
+            showCmsToast(data.message || "Page saved successfully", "success");
             resetForm();
             loadPages();
+        } else {
+            showCmsToast(data.error || "Failed to save page", "error");
         }
     } catch (error) {
-        alert("Error saving page: " + error.message);
+        showCmsToast("Error saving page: " + error.message, "error");
     }
 }
 
@@ -114,21 +229,25 @@ async function deletePage(pageId) {
     try {
         const response = await fetch(`${API_BASE}/cms/pages/${pageId}`, {
             method: "DELETE",
-            headers: {
-                "Authorization": `Bearer ${token}`
-            }
+            headers: { "Authorization": `Bearer ${token}` }
         });
 
         const data = await response.json();
-        alert(data.message || data.error);
+        showCmsToast(data.message || data.error, response.ok ? "success" : "error");
         loadPages();
     } catch (error) {
-        alert("Error deleting page: " + error.message);
+        showCmsToast("Error deleting page: " + error.message, "error");
     }
 }
 
 window.addEventListener("DOMContentLoaded", () => {
+    resetForm();
     loadPages();
+
     document.getElementById("savePageBtn").addEventListener("click", savePage);
     document.getElementById("resetPageBtn").addEventListener("click", resetForm);
+    document.getElementById("insertHeroBtn").addEventListener("click", insertHeroSection);
+    document.getElementById("insertStatsBtn").addEventListener("click", insertStatsSection);
+    document.getElementById("insertFeaturesBtn").addEventListener("click", insertFeaturesSection);
+    document.getElementById("formatJsonBtn").addEventListener("click", formatJson);
 });

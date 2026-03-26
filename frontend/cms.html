@@ -9,15 +9,12 @@
 <body>
 <div class="admin-page-wrapper">
     <div class="admin-container">
-
         <div class="page-topbar">
             <div>
                 <h1>CMS Pages</h1>
-                <p>Create and manage dynamic content pages</p>
+                <p>Create and manage dynamic premium content pages</p>
             </div>
-
             <div class="topbar-actions">
-                <button id="themeToggle" class="theme-btn">☀ Light</button>
                 <a href="admin.html" class="back-btn">← Dashboard</a>
             </div>
         </div>
@@ -28,10 +25,10 @@
             <input type="hidden" id="pageId">
 
             <label for="pageTitle">Title</label>
-            <input type="text" id="pageTitle" placeholder="Enter page title">
+            <input type="text" id="pageTitle" placeholder="Home page">
 
             <label for="pageSlug">Slug</label>
-            <input type="text" id="pageSlug" placeholder="about-us">
+            <input type="text" id="pageSlug" placeholder="home">
 
             <label for="pageStatus">Status</label>
             <select id="pageStatus">
@@ -39,10 +36,22 @@
                 <option value="published">Published</option>
             </select>
 
-            <label for="pageContent">Content</label>
-            <textarea id="pageContent" placeholder="Write page content..."></textarea>
+            <div class="section-head" style="margin-top:16px;">
+                <h2>Content Builder</h2>
+                <div class="button-group">
+                    <button type="button" id="insertHeroBtn">Insert Hero</button>
+                    <button type="button" id="insertStatsBtn">Insert Stats</button>
+                    <button type="button" id="insertFeaturesBtn">Insert Features</button>
+                    <button type="button" id="formatJsonBtn">Format JSON</button>
+                </div>
+            </div>
 
-            <div class="button-group">
+            <label for="pageContent">Content (JSON)</label>
+            <textarea id="pageContent" placeholder='{
+  "sections": []
+}'></textarea>
+
+            <div class="button-group" style="margin-top:14px;">
                 <button id="savePageBtn" type="button">Save Page</button>
                 <button id="resetPageBtn" type="button">Reset</button>
             </div>
@@ -69,11 +78,9 @@
                 </table>
             </div>
         </section>
-
     </div>
 </div>
 
-<script src="theme.js"></script>
 <script src="cms.js"></script>
 </body>
 </html>
