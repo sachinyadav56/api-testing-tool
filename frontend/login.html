@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login - API Tool</title>
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="/style.css">
 </head>
 <body class="auth-page">
     <div class="auth-container">
@@ -12,101 +12,154 @@
             <h1 id="formTitle">Welcome Back</h1>
             <p class="subtitle" id="formSubtitle">Please enter your details to login.</p>
 
-            <div id="usernameField" class="input-group" style="display:none;">
-                <input type="text" id="username" placeholder="Username">
-            </div>
+            <form id="authForm">
+                <div class="input-group" id="usernameGroup" style="display: none;">
+                    <input type="text" id="username" placeholder="Enter username">
+                </div>
 
-            <div class="input-group">
-                <input type="email" id="email" placeholder="Email Address">
-            </div>
+                <div class="input-group">
+                    <input type="email" id="email" placeholder="Enter email" required>
+                </div>
 
-            <div class="input-group">
-                <input type="password" id="password" placeholder="Password">
-            </div>
+                <div class="input-group">
+                    <input type="password" id="password" placeholder="Enter password" required>
+                </div>
 
-            <button id="mainBtn" class="btn">Login</button>
+                <button type="submit" class="btn" id="submitBtn">Login</button>
+            </form>
 
-            <p id="authMessage"></p>
+            <p id="messageBox" style="margin-top: 14px;"></p>
 
-            <p class="toggle-text">
-                <span id="toggleQuestion">Don't have an account?</span>
-                <span class="toggle-link" id="toggleAction">Register</span>
+            <p class="toggle-text" style="margin-top: 20px;">
+                <span id="toggleText">Don't have an account?</span>
+                <span class="toggle-link" id="toggleModeBtn">Register</span>
+            </p>
+
+            <p style="margin-top: 18px;">
+                <a href="/page/home" class="toggle-link" style="text-decoration:none;">← Back to Home</a>
             </p>
         </div>
     </div>
 
     <script>
         const API_BASE = window.location.origin;
-        let isLogin = true;
-
-        const mainBtn = document.getElementById("mainBtn");
-        const toggleAction = document.getElementById("toggleAction");
-        const usernameField = document.getElementById("usernameField");
+        const authForm = document.getElementById("authForm");
+        const usernameGroup = document.getElementById("usernameGroup");
+        const usernameInput = document.getElementById("username");
+        const emailInput = document.getElementById("email");
+        const passwordInput = document.getElementById("password");
+        const submitBtn = document.getElementById("submitBtn");
+        const toggleModeBtn = document.getElementById("toggleModeBtn");
+        const toggleText = document.getElementById("toggleText");
         const formTitle = document.getElementById("formTitle");
         const formSubtitle = document.getElementById("formSubtitle");
-        const toggleQuestion = document.getElementById("toggleQuestion");
-        const msg = document.getElementById("authMessage");
+        const messageBox = document.getElementById("messageBox");
 
-        toggleAction.addEventListener("click", () => {
+        let isLogin = true;
+
+        function setMessage(text, type = "error") {
+            messageBox.textContent = text;
+            messageBox.className = type === "success" ? "success" : "error";
+        }
+
+        function clearMessage() {
+            messageBox.textContent = "";
+            messageBox.className = "";
+        }
+
+        function updateMode() {
+            clearMessage();
+
+            if (isLogin) {
+                formTitle.textContent = "Welcome Back";
+                formSubtitle.textContent = "Please enter your details to login.";
+                submitBtn.textContent = "Login";
+                toggleText.textContent = "Don't have an account?";
+                toggleModeBtn.textContent = "Register";
+                usernameGroup.style.display = "none";
+                usernameInput.required = false;
+            } else {
+                formTitle.textContent = "Create Account";
+                formSubtitle.textContent = "Register to start using API Tool.";
+                submitBtn.textContent = "Register";
+                toggleText.textContent = "Already have an account?";
+                toggleModeBtn.textContent = "Login";
+                usernameGroup.style.display = "block";
+                usernameInput.required = true;
+            }
+        }
+
+        toggleModeBtn.addEventListener("click", () => {
             isLogin = !isLogin;
-            usernameField.style.display = isLogin ? "none" : "block";
-            formTitle.textContent = isLogin ? "Welcome Back" : "Create Account";
-            formSubtitle.textContent = isLogin
-                ? "Please enter your details to login."
-                : "Join us to start using the API tool.";
-            mainBtn.textContent = isLogin ? "Login" : "Register";
-            toggleQuestion.textContent = isLogin ? "Don't have an account?" : "Already have an account?";
-            toggleAction.textContent = isLogin ? "Register" : "Login";
-            msg.textContent = "";
-            msg.className = "";
+            authForm.reset();
+            updateMode();
         });
 
-        async function submitAuth() {
-            const username = document.getElementById("username").value.trim();
-            const email = document.getElementById("email").value.trim();
-            const password = document.getElementById("password").value.trim();
+        authForm.addEventListener("submit", async (event) => {
+            event.preventDefault();
+            clearMessage();
 
-            if ((!isLogin && !username) || !email || !password) {
-                msg.textContent = "Please fill all required fields.";
-                msg.className = "error";
+            const email = emailInput.value.trim();
+            const password = passwordInput.value.trim();
+            const username = usernameInput.value.trim();
+
+            if (!email || !password || (!isLogin && !username)) {
+                setMessage("Please fill all required fields.");
                 return;
             }
 
             const endpoint = isLogin ? "/login" : "/register";
-            const payload = isLogin ? { email, password } : { username, email, password };
+            const payload = isLogin
+                ? { email, password }
+                : { username, email, password };
 
-            msg.textContent = "Processing...";
-            msg.className = "";
+            submitBtn.disabled = true;
+            submitBtn.textContent = isLogin ? "Logging in..." : "Registering...";
 
             try {
                 const response = await fetch(`${API_BASE}${endpoint}`, {
                     method: "POST",
-                    headers: { "Content-Type": "application/json" },
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
                     body: JSON.stringify(payload)
                 });
 
                 const data = await response.json();
 
-                if (response.ok) {
-                    if (isLogin && data.user) {
-                        localStorage.setItem("token", data.access_token);
-                        localStorage.setItem("loggedInUser", JSON.stringify(data.user));
-                        window.location.href = "index.html";
-                    } else {
-                        msg.textContent = data.message || "Registration successful. Please login.";
-                        msg.className = "success";
-                    }
-                } else {
-                    msg.textContent = data.error || "An error occurred";
-                    msg.className = "error";
+                if (!response.ok) {
+                    setMessage(data.error || "Something went wrong.");
+                    return;
                 }
-            } catch (err) {
-                msg.textContent = "Could not connect to server.";
-                msg.className = "error";
-            }
-        }
 
-        mainBtn.addEventListener("click", submitAuth);
+                if (isLogin && data.user) {
+                    localStorage.setItem("token", data.access_token);
+                    localStorage.setItem("loggedInUser", JSON.stringify(data.user));
+
+                    setMessage("Login successful. Redirecting...", "success");
+
+                    setTimeout(() => {
+                        if (data.user.is_admin) {
+                            window.location.href = "/admin.html";
+                        } else {
+                            window.location.href = "/dashboard.html";
+                        }
+                    }, 700);
+                } else {
+                    setMessage("Registration successful. Please login now.", "success");
+                    isLogin = true;
+                    authForm.reset();
+                    updateMode();
+                }
+            } catch (error) {
+                setMessage("Network error. Please try again.");
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = isLogin ? "Login" : "Register";
+            }
+        });
+
+        updateMode();
     </script>
 </body>
 </html>

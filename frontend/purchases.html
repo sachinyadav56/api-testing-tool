@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Purchases Management - API Tool</title>
+    <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<div class="admin-page-wrapper">
+    <div class="admin-container">
+
+        <div class="page-topbar">
+            <div>
+                <h1>Purchases Management</h1>
+                <p>Real premium purchases from users</p>
+            </div>
+
+            <div class="topbar-actions">
+                <button id="themeToggle" class="theme-btn">☀ Light</button>
+                <a href="/admin.html" class="back-btn">← Admin Panel</a>
+                <button id="logoutBtn" class="danger-btn">Logout</button>
+            </div>
+        </div>
+
+        <section class="stats-grid">
+            <div class="stat-box">
+                <h3>Starter Buyers</h3>
+                <p id="starterCount">0</p>
+            </div>
+
+            <div class="stat-box">
+                <h3>Pro Buyers</h3>
+                <p id="proCount">0</p>
+            </div>
+
+            <div class="stat-box">
+                <h3>Enterprise Buyers</h3>
+                <p id="enterpriseCount">0</p>
+            </div>
+
+            <div class="stat-box">
+                <h3>Total Revenue</h3>
+                <p id="revenueCount">$0</p>
+            </div>
+        </section>
+
+        <section class="card">
+            <div class="section-head">
+                <h2>Purchased Plans</h2>
+            </div>
+
+            <div class="table-wrapper">
+                <table class="admin-table">
+                    <thead>
+                        <tr>
+                            <th>User</th>
+                            <th>Email</th>
+                            <th>Plan</th>
+                            <th>Amount</th>
+                            <th>Status</th>
+                            <th>Date</th>
+                            <th>Active Plan</th>
+                        </tr>
+                    </thead>
+                    <tbody id="purchasesTableBody">
+                        <tr>
+                            <td colspan="7">Loading purchases...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+    </div>
+</div>
+
+<script src="/theme.js"></script>
+<script src="/purchases.js"></script>
+</body>
+</html>

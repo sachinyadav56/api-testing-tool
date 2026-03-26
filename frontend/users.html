@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Manage Users</title>
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="/style.css">
 </head>
 <body>
 <div class="admin-page-wrapper">
@@ -18,9 +18,7 @@
 
             <div class="topbar-actions">
                 <button id="themeToggle" class="theme-btn">☀ Light</button>
-                <a href="admin.html" class="back-btn">← Dashboard</a>
-                <button id="refreshUsersBtn">Refresh</button>
-                <button id="logoutBtn" class="danger-btn">Logout</button>
+                <a href="/admin.html" class="back-btn">← Dashboard</a>
             </div>
         </div>
 
@@ -33,13 +31,14 @@
                             <th>Username</th>
                             <th>Email</th>
                             <th>Role</th>
+                            <th>Plan</th>
                             <th>Created</th>
                             <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody id="usersTableBody">
                         <tr>
-                            <td colspan="6">Loading users...</td>
+                            <td colspan="7">Loading users...</td>
                         </tr>
                     </tbody>
                 </table>
@@ -49,7 +48,7 @@
     </div>
 </div>
 
-<script src="theme.js"></script>
-<script src="users.js"></script>
+<script src="/theme.js"></script>
+<script src="/users.js"></script>
 </body>
 </html>

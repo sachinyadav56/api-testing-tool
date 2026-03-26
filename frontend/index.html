@@ -3,22 +3,31 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>API Management Tool</title>
-    <link rel="stylesheet" href="style.css">
+    <title>API Tester Workspace</title>
+    <link rel="stylesheet" href="/style.css">
 </head>
 <body>
-    <div class="app">
-        <header>
+<div class="admin-page-wrapper">
+    <div class="admin-container">
+
+        <div class="page-topbar">
             <div>
-                <h1>API Management & Testing Tool</h1>
-                <p id="userInfo"></p>
+                <h1>API Tester Workspace</h1>
+                <p id="userInfo">Welcome</p>
             </div>
-            <div class="header-actions">
-                <button type="button" id="themeToggle" class="theme-btn">☀ Light</button>
-                <button type="button" id="adminBtn" style="display:none;">Admin Panel</button>
-                <button type="button" id="logoutBtn">Logout</button>
+
+            <div class="topbar-actions">
+                <button id="themeToggle" class="theme-btn">☀ Light</button>
+                <a href="/dashboard.html" class="back-btn">← Dashboard</a>
+                <a href="/docs.html" class="back-btn">Docs</a>
+                <button id="logoutBtn" class="danger-btn">Logout</button>
             </div>
-        </header>
+        </div>
+
+        <section class="hero-card">
+            <h2>Test and manage your APIs</h2>
+            <p>Send requests, review responses, save collections, and track your history.</p>
+        </section>
 
         <div class="main-grid">
             <div class="card">
@@ -74,7 +83,7 @@
         <div class="bottom-grid">
             <div class="card">
                 <div class="section-head">
-                    <h2>History</h2>
+                    <h2>My History</h2>
                     <button type="button" id="clearHistoryBtn">Clear All</button>
                 </div>
                 <div id="historyOutput"></div>
@@ -93,9 +102,11 @@
                 <div id="collectionsOutput"></div>
             </div>
         </div>
-    </div>
 
-    <script src="theme.js"></script>
-    <script src="script.js"></script>
+    </div>
+</div>
+
+<script src="/theme.js"></script>
+<script src="/script.js"></script>
 </body>
 </html>

@@ -115,6 +115,24 @@ def init_db():
             )
         """)
 
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS purchases (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER NOT NULL,
+                plan_name TEXT NOT NULL,
+                amount TEXT,
+                status TEXT DEFAULT 'pending',
+                payment_reference TEXT,
+                created_at TEXT,
+                updated_at TEXT
+            )
+        """)
+
+        cursor.execute("PRAGMA table_info(users)")
+        user_columns = [row["name"] for row in cursor.fetchall()]
+        if "active_plan" not in user_columns:
+            cursor.execute("ALTER TABLE users ADD COLUMN active_plan TEXT DEFAULT 'Free'")
+
         conn.commit()
 
 
@@ -128,6 +146,16 @@ def serve_root():
 @app.route("/login.html")
 def serve_login_page():
     return send_from_directory(FRONTEND_DIR, "login.html")
+
+
+@app.route("/dashboard.html")
+def serve_dashboard_page():
+    return send_from_directory(FRONTEND_DIR, "dashboard.html")
+
+
+@app.route("/docs.html")
+def serve_docs_page():
+    return send_from_directory(FRONTEND_DIR, "docs.html")
 
 
 @app.route("/index.html")
@@ -158,6 +186,21 @@ def serve_history_page():
 @app.route("/collections.html")
 def serve_collections_page():
     return send_from_directory(FRONTEND_DIR, "collections.html")
+
+
+@app.route("/purchase.html")
+def serve_purchase_page():
+    return send_from_directory(FRONTEND_DIR, "purchase.html")
+
+
+@app.route("/payment.html")
+def serve_payment_page():
+    return send_from_directory(FRONTEND_DIR, "payment.html")
+
+
+@app.route("/purchases.html")
+def serve_purchases_page():
+    return send_from_directory(FRONTEND_DIR, "purchases.html")
 
 
 @app.route("/page/<slug>")
@@ -194,15 +237,14 @@ def register():
     try:
         with get_db_connection() as conn:
             cursor = conn.cursor()
-
             cursor.execute("SELECT COUNT(*) AS total FROM users")
             total_users = cursor.fetchone()["total"]
             is_admin = 1 if total_users == 0 else 0
 
             cursor.execute("""
-                INSERT INTO users (username, email, password, is_admin, created_at)
-                VALUES (?, ?, ?, ?, ?)
-            """, (username, email, hashed_password, is_admin, now_str()))
+                INSERT INTO users (username, email, password, is_admin, created_at, active_plan)
+                VALUES (?, ?, ?, ?, ?, ?)
+            """, (username, email, hashed_password, is_admin, now_str(), "Free"))
             conn.commit()
 
         return jsonify({
@@ -255,8 +297,153 @@ def login():
                 "username": user["username"],
                 "email": user["email"],
                 "is_admin": bool(user["is_admin"]),
+                "active_plan": user["active_plan"] if "active_plan" in user.keys() else "Free"
             }
         })
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+# ---------------- USER DASHBOARD / SUBSCRIPTION ---------------- #
+
+@app.route("/me/subscription", methods=["GET"])
+@jwt_required()
+def get_my_subscription():
+    try:
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                SELECT id, username, email, active_plan
+                FROM users
+                WHERE id = ?
+            """, (current_user_id(),))
+            user = cursor.fetchone()
+
+        if not user:
+            return jsonify({"error": "User not found"}), 404
+
+        return jsonify(dict(user))
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+# ---------------- PURCHASES ---------------- #
+
+@app.route("/purchase/checkout", methods=["POST"])
+@jwt_required()
+def create_purchase_checkout():
+    data = request.get_json() or {}
+    plan_name = data.get("plan_name", "").strip()
+    amount = data.get("amount", "").strip()
+
+    if not plan_name:
+        return jsonify({"error": "Plan name is required"}), 400
+
+    try:
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                INSERT INTO purchases (
+                    user_id, plan_name, amount, status, payment_reference, created_at, updated_at
+                )
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+            """, (
+                current_user_id(),
+                plan_name,
+                amount,
+                "pending",
+                f"PAY-{int(time.time())}",
+                now_str(),
+                now_str()
+            ))
+            purchase_id = cursor.lastrowid
+            conn.commit()
+
+        return jsonify({
+            "message": "Checkout created",
+            "purchase_id": purchase_id,
+            "plan_name": plan_name,
+            "amount": amount
+        })
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/purchase/confirm/<int:purchase_id>", methods=["POST"])
+@jwt_required()
+def confirm_purchase(purchase_id):
+    try:
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                SELECT * FROM purchases
+                WHERE id = ? AND user_id = ?
+            """, (purchase_id, current_user_id()))
+            purchase = cursor.fetchone()
+
+            if not purchase:
+                return jsonify({"error": "Purchase not found"}), 404
+
+            cursor.execute("""
+                UPDATE purchases
+                SET status = ?, updated_at = ?
+                WHERE id = ?
+            """, ("paid", now_str(), purchase_id))
+
+            cursor.execute("""
+                UPDATE users
+                SET active_plan = ?
+                WHERE id = ?
+            """, (purchase["plan_name"], current_user_id()))
+
+            conn.commit()
+
+        return jsonify({
+            "message": "Payment confirmed and plan activated",
+            "active_plan": purchase["plan_name"]
+        })
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/my/purchases", methods=["GET"])
+@jwt_required()
+def get_my_purchases():
+    try:
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                SELECT id, plan_name, amount, status, payment_reference, created_at, updated_at
+                FROM purchases
+                WHERE user_id = ?
+                ORDER BY id DESC
+            """, (current_user_id(),))
+            rows = cursor.fetchall()
+
+        return jsonify([dict(row) for row in rows])
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/admin/purchases", methods=["GET"])
+@jwt_required()
+def admin_get_purchases():
+    if not current_user_is_admin():
+        return jsonify({"error": "Admin access required"}), 403
+
+    try:
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                SELECT p.id, p.plan_name, p.amount, p.status, p.payment_reference,
+                       p.created_at, p.updated_at, u.username, u.email, u.active_plan
+                FROM purchases p
+                LEFT JOIN users u ON p.user_id = u.id
+                ORDER BY p.id DESC
+            """)
+            rows = cursor.fetchall()
+
+        return jsonify([dict(row) for row in rows])
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
@@ -699,7 +886,7 @@ def get_users():
         with get_db_connection() as conn:
             cursor = conn.cursor()
             cursor.execute("""
-                SELECT id, username, email, is_admin, created_at
+                SELECT id, username, email, is_admin, created_at, active_plan
                 FROM users
                 ORDER BY id DESC
             """)
@@ -753,6 +940,7 @@ def delete_user(user_id):
             cursor = conn.cursor()
             cursor.execute("DELETE FROM collections WHERE user_id = ?", (user_id,))
             cursor.execute("DELETE FROM history WHERE user_id = ?", (user_id,))
+            cursor.execute("DELETE FROM purchases WHERE user_id = ?", (user_id,))
             cursor.execute("DELETE FROM pages WHERE created_by = ?", (user_id,))
             cursor.execute("DELETE FROM users WHERE id = ?", (user_id,))
             conn.commit()

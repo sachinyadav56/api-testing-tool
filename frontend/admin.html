@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Dashboard</title>
-    <link rel="stylesheet" href="style.css">
+    <title>Admin Panel - API Tool</title>
+    <link rel="stylesheet" href="/style.css">
 </head>
 <body>
 <div class="admin-page-wrapper">
@@ -12,18 +12,27 @@
 
         <div class="page-topbar">
             <div>
-                <h1>Admin Dashboard</h1>
+                <h1>Admin Control Panel</h1>
                 <p id="adminInfo">Welcome Admin</p>
             </div>
+
             <div class="topbar-actions">
                 <button id="themeToggle" class="theme-btn">☀ Light</button>
+                <a href="/cms.html" class="back-btn">CMS</a>
+                <a href="/users.html" class="back-btn">Users</a>
+                <a href="/history.html" class="back-btn">History</a>
+                <a href="/collections.html" class="back-btn">Collections</a>
+                <a href="/purchases.html" class="back-btn">Purchases</a>
                 <button id="logoutBtn" class="danger-btn">Logout</button>
             </div>
         </div>
 
         <section class="hero-card">
-            <h2>Manage your complete API platform</h2>
-            <p>Users, CMS, collections, history and testing — all from one place.</p>
+            <h2>Platform Administration</h2>
+            <p>
+                Manage users, CMS content, purchase records, request history, collections,
+                and full platform controls from one place.
+            </p>
         </section>
 
         <section class="stats-grid">
@@ -31,64 +40,54 @@
                 <h3>Total Users</h3>
                 <p id="statUsers">0</p>
             </div>
+
             <div class="stat-box">
                 <h3>Total Requests</h3>
                 <p id="statRequests">0</p>
             </div>
-            <div class="stat-box">
-                <h3>Success Requests</h3>
-                <p id="statSuccess">0</p>
-            </div>
+
             <div class="stat-box">
                 <h3>Success Rate</h3>
                 <p id="statRate">0%</p>
             </div>
-        </section>
 
-        <section class="quick-links-grid">
-            <a href="users.html" class="quick-card">
-                <h3>Manage Users</h3>
-                <p>Create, update and remove users</p>
-            </a>
-
-            <a href="cms.html" class="quick-card">
-                <h3>CMS Pages</h3>
-                <p>Create and manage dynamic pages</p>
-            </a>
-
-            <a href="collections.html" class="quick-card">
-                <h3>Collections</h3>
-                <p>View all saved collections</p>
-            </a>
-
-            <a href="history.html" class="quick-card">
-                <h3>History</h3>
-                <p>Monitor request logs</p>
-            </a>
-
-            <a href="index.html" class="quick-card">
-                <h3>API Tester</h3>
-                <p>Open testing workspace</p>
-            </a>
-        </section>
-
-        <section class="card">
-            <div class="overview-list">
-                <div class="overview-item">
-                    <span>Total Pages</span>
-                    <strong id="statPages">0</strong>
-                </div>
-                <div class="overview-item">
-                    <span>Total Collections</span>
-                    <strong id="statCollections">0</strong>
-                </div>
+            <div class="stat-box">
+                <h3>Total Pages</h3>
+                <p id="statPages">0</p>
             </div>
+        </section>
+
+        <section class="quick-links-grid" style="grid-template-columns: repeat(5, 1fr);">
+            <a href="/users.html" class="quick-card">
+                <h3>Manage Users</h3>
+                <p>View and control users</p>
+            </a>
+
+            <a href="/cms.html" class="quick-card">
+                <h3>Manage CMS</h3>
+                <p>Create premium pages</p>
+            </a>
+
+            <a href="/history.html" class="quick-card">
+                <h3>Global History</h3>
+                <p>Track all requests</p>
+            </a>
+
+            <a href="/collections.html" class="quick-card">
+                <h3>Global Collections</h3>
+                <p>Manage all collections</p>
+            </a>
+
+            <a href="/purchases.html" class="quick-card">
+                <h3>Purchases</h3>
+                <p>View real user purchases</p>
+            </a>
         </section>
 
     </div>
 </div>
 
-<script src="theme.js"></script>
-<script src="admin.js"></script>
+<script src="/theme.js"></script>
+<script src="/admin.js"></script>
 </body>
 </html>

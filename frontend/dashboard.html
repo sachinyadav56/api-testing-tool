@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Dashboard - API Tool</title>
+    <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<div class="admin-page-wrapper">
+    <div class="admin-container">
+
+        <div class="page-topbar">
+            <div>
+                <h1>User Dashboard</h1>
+                <p id="dashboardUserInfo">Welcome</p>
+            </div>
+
+            <div class="topbar-actions">
+                <button id="themeToggle" class="theme-btn">☀ Light</button>
+                <a href="/docs.html" class="back-btn">Docs</a>
+                <button id="logoutBtn" class="danger-btn">Logout</button>
+            </div>
+        </div>
+
+        <section class="hero-card">
+            <h2>Premium API Workspace</h2>
+            <p>
+                Manage your requests, collections, history and documentation from one place.
+            </p>
+        </section>
+
+        <section class="stats-grid">
+    <div class="stat-box">
+        <h3>Current Plan</h3>
+        <p id="dashboardCurrentPlan">Free</p>
+    </div>
+    <div class="stat-box">
+        <h3>Collections</h3>
+        <p id="dashboardCollectionsCount">0</p>
+    </div>
+    <div class="stat-box">
+        <h3>History</h3>
+        <p id="dashboardHistoryCount">0</p>
+    </div>
+    <div class="stat-box">
+        <h3>Status</h3>
+        <p id="dashboardPlanStatus">Inactive</p>
+    </div>
+</section>
+
+        <section class="quick-links-grid" style="grid-template-columns: repeat(5, 1fr);">
+    <a href="/index.html" class="quick-card">
+        <h3>API Tester</h3>
+        <p>Send and test requests</p>
+    </a>
+
+    <a href="/purchase.html" class="quick-card">
+        <h3>Purchase Plan</h3>
+        <p>Buy and activate premium</p>
+    </a>
+
+    <a href="/docs.html" class="quick-card">
+        <h3>Documentation</h3>
+        <p>Learn how to use the tool</p>
+    </a>
+</section>
+
+        <section class="card">
+            <h2>How to use this tool</h2>
+            <div class="overview-list">
+                <div class="overview-item">
+                    <span>1. Open API Tester</span>
+                    <strong>Test APIs</strong>
+                </div>
+                <div class="overview-item">
+                    <span>2. Save useful requests</span>
+                    <strong>Collections</strong>
+                </div>
+                <div class="overview-item">
+                    <span>3. Review previous calls</span>
+                    <strong>History</strong>
+                </div>
+                <div class="overview-item">
+                    <span>4. Read guides</span>
+                    <strong>Docs</strong>
+                </div>
+            </div>
+        </section>
+
+    </div>
+</div>
+
+<script src="/theme.js"></script>
+<script src="/dashboard.js"></script>
+</body>
+</html>

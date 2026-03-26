@@ -2,7 +2,11 @@ const loggedInUser = JSON.parse(localStorage.getItem("loggedInUser"));
 const token = localStorage.getItem("token");
 
 if (!loggedInUser || !token) {
-    window.location.href = "login.html";
+    window.location.href = "/login.html";
+}
+
+if (loggedInUser.is_admin) {
+    window.location.href = "/admin.html";
 }
 
 const API_BASE = window.location.origin;
@@ -33,12 +37,49 @@ function parseJsonInput(text, fieldName) {
     }
 }
 
+function ensureToastContainer() {
+    let container = document.getElementById("toastContainer");
+    if (!container) {
+        container = document.createElement("div");
+        container.id = "toastContainer";
+        container.className = "toast-container";
+        document.body.appendChild(container);
+    }
+    return container;
+}
+
+function showToast(message, type = "success") {
+    const container = ensureToastContainer();
+
+    const toast = document.createElement("div");
+    toast.className = `toast toast-${type}`;
+    toast.innerHTML = `
+        <span class="toast-icon">${type === "success" ? "✓" : type === "error" ? "✕" : "i"}</span>
+        <span class="toast-text">${message}</span>
+        <button class="toast-close">&times;</button>
+    `;
+
+    toast.querySelector(".toast-close").addEventListener("click", () => {
+        toast.classList.remove("show");
+        setTimeout(() => toast.remove(), 250);
+    });
+
+    container.appendChild(toast);
+
+    requestAnimationFrame(() => toast.classList.add("show"));
+
+    setTimeout(() => {
+        toast.classList.remove("show");
+        setTimeout(() => toast.remove(), 250);
+    }, 3000);
+}
+
 function renderActiveTab() {
     const responseEl = document.getElementById("responseOutput");
     const bodyTabBtn = document.getElementById("bodyTabBtn");
     const fullTabBtn = document.getElementById("fullTabBtn");
 
-    if (!responseEl || !bodyTabBtn || !fullTabBtn) return;
+    if (!responseEl) return;
 
     if (activeTab === "body") {
         responseEl.innerText = currentBodyResponse;
@@ -72,66 +113,13 @@ function clearRequestFields() {
     document.getElementById("body").value = "";
 }
 
-function ensureToastContainer() {
-    let container = document.getElementById("toastContainer");
-
-    if (!container) {
-        container = document.createElement("div");
-        container.id = "toastContainer";
-        container.className = "toast-container";
-        document.body.appendChild(container);
-    }
-
-    return container;
-}
-
-function showToast(message, type = "success") {
-    const container = ensureToastContainer();
-
-    const toast = document.createElement("div");
-    toast.className = `toast toast-${type}`;
-
-    const icon = document.createElement("span");
-    icon.className = "toast-icon";
-    icon.textContent =
-        type === "success" ? "✓" :
-        type === "error" ? "✕" :
-        type === "info" ? "i" : "!";
-
-    const text = document.createElement("span");
-    text.className = "toast-text";
-    text.textContent = message;
-
-    const closeBtn = document.createElement("button");
-    closeBtn.className = "toast-close";
-    closeBtn.innerHTML = "&times;";
-    closeBtn.onclick = () => {
-        toast.classList.remove("show");
-        setTimeout(() => toast.remove(), 250);
-    };
-
-    toast.appendChild(icon);
-    toast.appendChild(text);
-    toast.appendChild(closeBtn);
-    container.appendChild(toast);
-
-    requestAnimationFrame(() => {
-        toast.classList.add("show");
-    });
-
-    setTimeout(() => {
-        toast.classList.remove("show");
-        setTimeout(() => toast.remove(), 250);
-    }, 3000);
-}
-
 async function copyResponse() {
     try {
         const textToCopy = activeTab === "body" ? currentBodyResponse : currentFullResponse;
         await navigator.clipboard.writeText(textToCopy);
         showToast("Response copied", "success");
     } catch (error) {
-        showToast("Copy failed: " + error.message, "error");
+        showToast("Copy failed", "error");
     }
 }
 
@@ -165,9 +153,8 @@ async function sendRequest() {
         const data = await response.json();
 
         document.getElementById("statusCode").textContent = data.status_code ?? "-";
-        document.getElementById("responseTime").textContent = data.response_time_ms
-            ? `${data.response_time_ms} ms`
-            : "-";
+        document.getElementById("responseTime").textContent =
+            data.response_time_ms ? `${data.response_time_ms} ms` : "-";
 
         currentBodyResponse = typeof data.response === "object"
             ? JSON.stringify(data.response, null, 2)
@@ -185,7 +172,7 @@ async function sendRequest() {
             showToast(data.error || "Request failed", "error");
         }
     } catch (err) {
-        showToast("Request failed: " + err.message, "error");
+        showToast("Request failed", "error");
     }
 }
 
@@ -197,12 +184,10 @@ async function loadHistory() {
 
         const data = await res.json();
         const container = document.getElementById("historyOutput");
-        if (!container) return;
-
         container.innerHTML = "";
 
         if (!Array.isArray(data) || data.length === 0) {
-            container.innerHTML = "<p>No history</p>";
+            container.innerHTML = "<p>No history found.</p>";
             return;
         }
 
@@ -217,10 +202,7 @@ async function loadHistory() {
             container.appendChild(div);
         });
     } catch (err) {
-        const container = document.getElementById("historyOutput");
-        if (container) {
-            container.innerHTML = `<p>Error loading history: ${err.message}</p>`;
-        }
+        document.getElementById("historyOutput").innerHTML = "<p>Error loading history.</p>";
     }
 }
 
@@ -234,10 +216,10 @@ async function clearHistory() {
         });
 
         const data = await res.json();
-        showToast(data.message || data.error || "History cleared", res.ok ? "success" : "error");
+        showToast(data.message || "History cleared", res.ok ? "success" : "error");
         await loadHistory();
     } catch (err) {
-        showToast("Error clearing history: " + err.message, "error");
+        showToast("Error clearing history", "error");
     }
 }
 
@@ -267,10 +249,10 @@ async function saveCollection() {
         });
 
         const data = await res.json();
-        showToast(data.message || data.error || "Collection saved", res.ok ? "success" : "error");
+        showToast(data.message || "Collection saved", res.ok ? "success" : "error");
         await loadCollections();
     } catch (err) {
-        showToast("Error saving collection: " + err.message, "error");
+        showToast("Error saving collection", "error");
     }
 }
 
@@ -295,7 +277,7 @@ function loadCollection(item) {
     }
 
     window.scrollTo({ top: 0, behavior: "smooth" });
-    showToast("Collection loaded into form", "success");
+    showToast("Collection loaded", "success");
 }
 
 async function editCollection(item) {
@@ -308,10 +290,7 @@ async function editCollection(item) {
     try {
         headers = item.headers ? JSON.parse(item.headers) : {};
         body = item.body ? JSON.parse(item.body) : {};
-    } catch {
-        headers = {};
-        body = {};
-    }
+    } catch {}
 
     try {
         const res = await fetch(`${API_BASE}/collections/item/${item.id}`, {
@@ -327,10 +306,10 @@ async function editCollection(item) {
         });
 
         const data = await res.json();
-        showToast(data.message || data.error || "Collection updated", res.ok ? "success" : "error");
+        showToast(data.message || "Collection updated", res.ok ? "success" : "error");
         await loadCollections();
     } catch (err) {
-        showToast("Error updating collection: " + err.message, "error");
+        showToast("Error updating collection", "error");
     }
 }
 
@@ -344,10 +323,10 @@ async function deleteCollection(id) {
         });
 
         const data = await res.json();
-        showToast(data.message || data.error || "Collection deleted", res.ok ? "success" : "error");
+        showToast(data.message || "Collection deleted", res.ok ? "success" : "error");
         await loadCollections();
     } catch (err) {
-        showToast("Error deleting collection: " + err.message, "error");
+        showToast("Error deleting collection", "error");
     }
 }
 
@@ -359,8 +338,6 @@ async function loadCollections() {
 
         const data = await res.json();
         const container = document.getElementById("collectionsOutput");
-        if (!container) return;
-
         container.innerHTML = "";
 
         if (!Array.isArray(data) || data.length === 0) {
@@ -371,7 +348,6 @@ async function loadCollections() {
         data.forEach(item => {
             const div = document.createElement("div");
             div.className = "collection-item";
-
             div.innerHTML = `
                 <strong>${item.name}</strong> (${item.method})<br>
                 ${item.url}
@@ -389,10 +365,7 @@ async function loadCollections() {
             container.appendChild(div);
         });
     } catch (err) {
-        const container = document.getElementById("collectionsOutput");
-        if (container) {
-            container.innerHTML = `<p>Error loading collections: ${err.message}</p>`;
-        }
+        document.getElementById("collectionsOutput").innerHTML = "<p>Error loading collections.</p>";
     }
 }
 
@@ -403,11 +376,7 @@ async function exportCollections() {
         });
 
         const data = await res.json();
-
-        const blob = new Blob([JSON.stringify(data, null, 2)], {
-            type: "application/json"
-        });
-
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
         const a = document.createElement("a");
         a.href = URL.createObjectURL(blob);
         a.download = "collections.json";
@@ -415,13 +384,12 @@ async function exportCollections() {
 
         showToast("Collections exported", "success");
     } catch (err) {
-        showToast("Export failed: " + err.message, "error");
+        showToast("Export failed", "error");
     }
 }
 
 function openImportDialog() {
-    const input = document.getElementById("importFileInput");
-    if (input) input.click();
+    document.getElementById("importFileInput").click();
 }
 
 async function importCollections(e) {
@@ -441,10 +409,10 @@ async function importCollections(e) {
         });
 
         const result = await res.json();
-        showToast(result.message || result.error || "Import completed", res.ok ? "success" : "error");
+        showToast(result.message || "Import completed", res.ok ? "success" : "error");
         await loadCollections();
     } catch (err) {
-        showToast("Import failed: " + err.message, "error");
+        showToast("Import failed", "error");
     }
 
     e.target.value = "";
@@ -452,51 +420,26 @@ async function importCollections(e) {
 
 function logout() {
     localStorage.clear();
-    window.location.href = "login.html";
+    window.location.href = "/login.html";
 }
 
-window.onload = () => {
+window.addEventListener("DOMContentLoaded", () => {
     loadHistory();
     loadCollections();
 
-    const sendBtn = document.getElementById("sendBtn");
-    const saveBtn = document.getElementById("saveBtn");
-    const logoutBtn = document.getElementById("logoutBtn");
-    const copyResponseBtn = document.getElementById("copyResponseBtn");
-    const clearResponseBtn = document.getElementById("clearResponseBtn");
-    const clearHistoryBtn = document.getElementById("clearHistoryBtn");
-    const bodyTabBtn = document.getElementById("bodyTabBtn");
-    const fullTabBtn = document.getElementById("fullTabBtn");
-    const exportCollectionsBtn = document.getElementById("exportCollectionsBtn");
-    const importCollectionsBtn = document.getElementById("importCollectionsBtn");
-    const importFileInput = document.getElementById("importFileInput");
-    const refreshCollectionsBtn = document.getElementById("refreshCollectionsBtn");
-    const userInfo = document.getElementById("userInfo");
-    const adminBtn = document.getElementById("adminBtn");
+    document.getElementById("sendBtn").addEventListener("click", sendRequest);
+    document.getElementById("saveBtn").addEventListener("click", saveCollection);
+    document.getElementById("logoutBtn").addEventListener("click", logout);
+    document.getElementById("copyResponseBtn").addEventListener("click", copyResponse);
+    document.getElementById("clearResponseBtn").addEventListener("click", clearResponse);
+    document.getElementById("clearHistoryBtn").addEventListener("click", clearHistory);
+    document.getElementById("bodyTabBtn").addEventListener("click", () => switchTab("body"));
+    document.getElementById("fullTabBtn").addEventListener("click", () => switchTab("full"));
+    document.getElementById("exportCollectionsBtn").addEventListener("click", exportCollections);
+    document.getElementById("importCollectionsBtn").addEventListener("click", openImportDialog);
+    document.getElementById("importFileInput").addEventListener("change", importCollections);
+    document.getElementById("refreshCollectionsBtn").addEventListener("click", loadCollections);
 
-    if (sendBtn) sendBtn.onclick = sendRequest;
-    if (saveBtn) saveBtn.onclick = saveCollection;
-    if (logoutBtn) logoutBtn.onclick = logout;
-    if (copyResponseBtn) copyResponseBtn.onclick = copyResponse;
-    if (clearResponseBtn) clearResponseBtn.onclick = clearResponse;
-    if (clearHistoryBtn) clearHistoryBtn.onclick = clearHistory;
-    if (bodyTabBtn) bodyTabBtn.onclick = () => switchTab("body");
-    if (fullTabBtn) fullTabBtn.onclick = () => switchTab("full");
-    if (exportCollectionsBtn) exportCollectionsBtn.onclick = exportCollections;
-    if (importCollectionsBtn) importCollectionsBtn.onclick = openImportDialog;
-    if (importFileInput) importFileInput.onchange = importCollections;
-    if (refreshCollectionsBtn) refreshCollectionsBtn.onclick = loadCollections;
-
-    if (userInfo) {
-        userInfo.innerText = "Logged in as: " + loggedInUser.username;
-    }
-
-    if (loggedInUser.is_admin && adminBtn) {
-        adminBtn.style.display = "inline-block";
-        adminBtn.onclick = () => {
-            window.location.href = "admin.html";
-        };
-    }
-
+    document.getElementById("userInfo").textContent = `Welcome ${loggedInUser.username}`;
     renderActiveTab();
-};
+});
