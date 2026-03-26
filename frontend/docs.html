@@ -7,13 +7,13 @@
     <link rel="stylesheet" href="/style.css">
 </head>
 <body>
-<div class="admin-page-wrapper">
-    <div class="admin-container">
+<div class="docs-page">
+    <div class="docs-container">
 
-        <div class="page-topbar">
+        <div class="docs-topbar">
             <div>
                 <h1>Documentation</h1>
-                <p>How to use the API Tool platform</p>
+                <p>Learn how to use the API Tool platform</p>
             </div>
 
             <div class="topbar-actions">
@@ -22,36 +22,70 @@
             </div>
         </div>
 
-        <section class="card">
-            <h2>What this platform does</h2>
-            <p>
-                API Tool helps individuals and organizations test APIs, save collections,
-                review request history, and manage content through a premium platform experience.
-            </p>
-        </section>
+        <div class="docs-layout">
+            <aside class="docs-sidebar">
+                <a href="#overview">Overview</a>
+                <a href="#send-request">Send Request</a>
+                <a href="#collections">Collections</a>
+                <a href="#history">History</a>
+                <a href="#plans">Premium Plans</a>
+                <a href="#admin">Admin Panel</a>
+            </aside>
 
-        <section class="card">
-            <h2>How to send a request</h2>
-            <p>Go to API Tester, choose method, enter URL, add headers/body, then click Send Request.</p>
-        </section>
+            <main class="docs-content">
+                <section id="overview" class="docs-section">
+                    <h2>Overview</h2>
+                    <p>
+                        API Tool is a premium platform for individuals and organizations to test APIs,
+                        save collections, track request history, manage plans, and publish dynamic product pages.
+                    </p>
+                </section>
 
-        <section class="card">
-            <h2>How to save collections</h2>
-            <p>After preparing a request, click Save Collection so you can reuse it later.</p>
-        </section>
+                <section id="send-request" class="docs-section">
+                    <h2>How to send a request</h2>
+                    <p>
+                        Open the API Tester workspace, choose an HTTP method, enter the API URL,
+                        add headers and request body if needed, then click <strong>Send Request</strong>.
+                    </p>
+                    <p>
+                        After sending, you will see the response body, full response, status code,
+                        and response time.
+                    </p>
+                </section>
 
-        <section class="card">
-            <h2>How history works</h2>
-            <p>Every request you send is stored in history with method, status, URL and time.</p>
-        </section>
+                <section id="collections" class="docs-section">
+                    <h2>How collections work</h2>
+                    <p>
+                        Collections help you save useful API requests so you can reuse them later.
+                        You can load, edit, delete, export, and import saved collections.
+                    </p>
+                </section>
 
-        <section class="card">
-            <h2>Premium usage</h2>
-            <p>
-                Organizations can use this platform as a premium API workspace with documentation,
-                dynamic pages, collections, testing and admin management.
-            </p>
-        </section>
+                <section id="history" class="docs-section">
+                    <h2>How history works</h2>
+                    <p>
+                        Every request you send is stored in your history with request method,
+                        status code, URL, and date. This helps you review your testing activity.
+                    </p>
+                </section>
+
+                <section id="plans" class="docs-section">
+                    <h2>Premium plans</h2>
+                    <p>
+                        Users can choose a premium plan from the purchase page. After confirming payment,
+                        the selected plan becomes active on the user dashboard.
+                    </p>
+                </section>
+
+                <section id="admin" class="docs-section">
+                    <h2>Admin panel</h2>
+                    <p>
+                        The admin panel is separate from the user dashboard. Admin users can manage
+                        CMS pages, users, purchases, collections, and system-wide history.
+                    </p>
+                </section>
+            </main>
+        </div>
 
     </div>
 </div>
