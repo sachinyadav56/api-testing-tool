@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Collections</title>
+    <title>Queries - API Tool</title>
     <link rel="stylesheet" href="/style.css">
 </head>
 <body>
@@ -12,40 +12,33 @@
 
         <div class="page-topbar">
             <div>
-                <h1>Collections</h1>
-                <p>All users collections including admin</p>
+                <h1>Queries List</h1>
+                <p>All support queries from users</p>
             </div>
 
             <div class="topbar-actions">
                 <button id="themeToggle" class="theme-btn">☀ Light</button>
                 <a href="/admin.html" class="back-btn">← Dashboard</a>
-                <button id="deleteSelectedCollectionsBtn" class="danger-btn">Delete Selected</button>
             </div>
         </div>
 
         <section class="card">
-            <div class="section-head">
-                <h2>Collections</h2>
-                <div class="button-group">
-                    <input type="text" id="searchCollection" placeholder="Search collections">
-                </div>
-            </div>
-
             <div class="table-wrapper">
                 <table class="admin-table">
                     <thead>
                         <tr>
-                            <th><input type="checkbox" id="selectAllCollections"></th>
-                            <th>User</th>
                             <th>Name</th>
-                            <th>Method</th>
-                            <th>URL</th>
+                            <th>Email</th>
+                            <th>Subject</th>
+                            <th>Message</th>
+                            <th>Status</th>
                             <th>Date</th>
+                            <th>Action</th>
                         </tr>
                     </thead>
-                    <tbody id="collectionsTableBody">
+                    <tbody id="queriesTableBody">
                         <tr>
-                            <td colspan="6">Loading collections...</td>
+                            <td colspan="7">Loading queries...</td>
                         </tr>
                     </tbody>
                 </table>
@@ -56,6 +49,6 @@
 </div>
 
 <script src="/theme.js"></script>
-<script src="/collections.js"></script>
+<script src="/queries.js"></script>
 </body>
 </html>

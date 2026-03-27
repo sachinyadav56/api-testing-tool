@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Settings - API Tool</title>
+    <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<div class="admin-page-wrapper">
+    <div class="admin-container">
+
+        <div class="page-topbar">
+            <div>
+                <h1>Profile & Settings</h1>
+                <p>Manage your account information and password</p>
+            </div>
+
+            <div class="topbar-actions">
+                <button id="themeToggle" class="theme-btn">☀ Light</button>
+                <a href="/dashboard.html" class="back-btn">← Dashboard</a>
+            </div>
+        </div>
+
+        <section class="stats-grid">
+            <div class="stat-box">
+                <h3>Username</h3>
+                <p id="profileUsername">-</p>
+            </div>
+            <div class="stat-box">
+                <h3>Email</h3>
+                <p id="profileEmail">-</p>
+            </div>
+            <div class="stat-box">
+                <h3>Current Plan</h3>
+                <p id="profilePlan">Free</p>
+            </div>
+            <div class="stat-box">
+                <h3>Account Type</h3>
+                <p id="profileRole">User</p>
+            </div>
+        </section>
+
+        <div class="main-grid">
+            <section class="card">
+                <h2>Update Profile</h2>
+
+                <label for="settingsUsername">Username</label>
+                <input type="text" id="settingsUsername" placeholder="Enter username">
+
+                <label for="settingsEmail">Email</label>
+                <input type="email" id="settingsEmail" placeholder="Enter email">
+
+                <div class="button-group" style="margin-top:16px;">
+                    <button id="saveProfileBtn" type="button">Save Profile</button>
+                </div>
+            </section>
+
+            <section class="card">
+                <h2>Change Password</h2>
+
+                <label for="currentPassword">Current Password</label>
+                <input type="password" id="currentPassword" placeholder="Enter current password">
+
+                <label for="newPassword">New Password</label>
+                <input type="password" id="newPassword" placeholder="Enter new password">
+
+                <div class="button-group" style="margin-top:16px;">
+                    <button id="changePasswordBtn" type="button">Change Password</button>
+                </div>
+            </section>
+        </div>
+
+    </div>
+</div>
+
+<script src="/theme.js"></script>
+<script src="/settings.js"></script>
+</body>
+</html>

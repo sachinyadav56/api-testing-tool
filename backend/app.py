@@ -88,6 +88,21 @@ def init_db():
                 created_at TEXT
             )
         """)
+        
+        
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS queries (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER,
+                name TEXT,
+                email TEXT,
+                subject TEXT,
+                message TEXT,
+                status TEXT DEFAULT 'pending',
+                created_at TEXT,
+                updated_at TEXT
+            )
+        """)
 
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS collections (
@@ -142,10 +157,23 @@ def init_db():
 def serve_root():
     return redirect("/page/home")
 
+@app.route("/queries.html")
+def serve_queries_page():
+    return send_from_directory(FRONTEND_DIR, "queries.html")
+
 
 @app.route("/login.html")
 def serve_login_page():
     return send_from_directory(FRONTEND_DIR, "login.html")
+
+
+@app.route("/faq.html")
+def faq_page():
+    return send_from_directory(FRONTEND_DIR, "faq.html")
+
+@app.route("/contact.html")
+def contact_page():
+    return send_from_directory(FRONTEND_DIR, "contact.html")
 
 
 @app.route("/dashboard.html")
@@ -156,6 +184,10 @@ def serve_dashboard_page():
 @app.route("/docs.html")
 def serve_docs_page():
     return send_from_directory(FRONTEND_DIR, "docs.html")
+
+@app.route("/settings.html")
+def serve_settings_page():
+    return send_from_directory(FRONTEND_DIR, "settings.html")
 
 
 @app.route("/index.html")
@@ -1078,6 +1110,169 @@ def dashboard_stats():
             "total_pages": total_pages,
             "total_collections": total_collections,
         })
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    
+    
+@app.route("/me/profile", methods=["PUT"])
+@jwt_required()
+def update_my_profile():
+    data = request.get_json() or {}
+    username = data.get("username", "").strip()
+    email = data.get("email", "").strip().lower()
+
+    if not username or not email:
+        return jsonify({"error": "Username and email are required"}), 400
+
+    try:
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                UPDATE users
+                SET username = ?, email = ?
+                WHERE id = ?
+            """, (username, email, current_user_id()))
+            conn.commit()
+
+        return jsonify({"message": "Profile updated successfully"})
+    except sqlite3.IntegrityError:
+        return jsonify({"error": "Username or email already exists"}), 400
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/me/password", methods=["PUT"])
+@jwt_required()
+def update_my_password():
+    data = request.get_json() or {}
+    current_password = data.get("current_password", "").strip()
+    new_password = data.get("new_password", "").strip()
+
+    if not current_password or not new_password:
+        return jsonify({"error": "Current and new password are required"}), 400
+
+    if len(new_password) < 6:
+        return jsonify({"error": "New password must be at least 6 characters"}), 400
+
+    try:
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT password FROM users WHERE id = ?", (current_user_id(),))
+            user = cursor.fetchone()
+
+            if not user:
+                return jsonify({"error": "User not found"}), 404
+
+            if not check_password_hash(user["password"], current_password):
+                return jsonify({"error": "Current password is incorrect"}), 400
+
+            cursor.execute("""
+                UPDATE users
+                SET password = ?
+                WHERE id = ?
+            """, (generate_password_hash(new_password), current_user_id()))
+            conn.commit()
+
+        return jsonify({"message": "Password changed successfully"})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    
+@app.route("/support", methods=["POST"])
+def create_support():
+    data = request.get_json() or {}
+
+    subject = data.get("subject", "").strip()
+    message = data.get("message", "").strip()
+
+    if not subject or not message:
+        return jsonify({"error": "All fields required"}), 400
+
+    return jsonify({"message": "Support request sent successfully"})
+
+
+
+@app.route("/support/query", methods=["POST"])
+@jwt_required(optional=True)
+def create_query():
+    data = request.get_json() or {}
+
+    name = data.get("name", "").strip()
+    email = data.get("email", "").strip().lower()
+    subject = data.get("subject", "").strip()
+    message = data.get("message", "").strip()
+
+    if not name or not email or not subject or not message:
+        return jsonify({"error": "All fields are required"}), 400
+
+    try:
+        user_id = None
+        try:
+            identity = get_jwt_identity()
+            if identity:
+                user_id = int(identity)
+        except Exception:
+            user_id = None
+
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                INSERT INTO queries (user_id, name, email, subject, message, status, created_at, updated_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            """, (
+                user_id,
+                name,
+                email,
+                subject,
+                message,
+                "pending",
+                now_str(),
+                now_str()
+            ))
+            conn.commit()
+
+        return jsonify({"message": "Query sent successfully"})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/admin/queries", methods=["GET"])
+@jwt_required()
+def admin_get_queries():
+    if not current_user_is_admin():
+        return jsonify({"error": "Admin access required"}), 403
+
+    try:
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                SELECT id, name, email, subject, message, status, created_at, updated_at
+                FROM queries
+                ORDER BY id DESC
+            """)
+            rows = cursor.fetchall()
+
+        return jsonify([dict(row) for row in rows])
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/admin/queries/<int:query_id>/solve", methods=["PUT"])
+@jwt_required()
+def admin_solve_query(query_id):
+    if not current_user_is_admin():
+        return jsonify({"error": "Admin access required"}), 403
+
+    try:
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                UPDATE queries
+                SET status = ?, updated_at = ?
+                WHERE id = ?
+            """, ("solved", now_str(), query_id))
+            conn.commit()
+
+        return jsonify({"message": "Query marked as solved"})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 

@@ -10,6 +10,8 @@ if (!loggedInUser.is_admin) {
     window.location.href = "/dashboard.html";
 }
 
+let allUsers = [];
+
 function authOnlyHeaders() {
     return {
         "Authorization": `Bearer ${token}`
@@ -39,40 +41,65 @@ async function loadUsers() {
             return;
         }
 
-        const tbody = document.getElementById("usersTableBody");
-        tbody.innerHTML = "";
+        allUsers = Array.isArray(data) ? data : [];
+        renderUsers();
+    } catch (error) {
+        document.getElementById("usersTableBody").innerHTML =
+            `<tr><td colspan="7">Error loading users.</td></tr>`;
+    }
+}
 
-        if (!Array.isArray(data) || data.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="7">No users found.</td></tr>`;
-            return;
-        }
+function renderUsers() {
+    const search = document.getElementById("searchUserInput").value.trim().toLowerCase();
+    const role = document.getElementById("roleFilter").value;
+    const tbody = document.getElementById("usersTableBody");
+    tbody.innerHTML = "";
 
-        data.forEach(user => {
-            const tr = document.createElement("tr");
-            tr.innerHTML = `
-                <td>${user.id}</td>
-                <td>${user.username}</td>
-                <td>${user.email}</td>
-                <td>${user.is_admin ? '<span class="role-admin">Admin</span>' : '<span class="role-user">User</span>'}</td>
-                <td>${user.active_plan || "Free"}</td>
-                <td>${user.created_at || "-"}</td>
-                <td>
-                    <div class="table-actions">
-                        <button class="edit-btn">Edit</button>
-                        <button class="delete-btn">Delete</button>
-                    </div>
-                </td>
-            `;
+    const filtered = allUsers.filter(user => {
+        const username = (user.username || "").toLowerCase();
+        const email = (user.email || "").toLowerCase();
 
-            tr.querySelector(".edit-btn").addEventListener("click", async () => {
-                const username = prompt("Username:", user.username);
-                if (!username) return;
+        const matchSearch = username.includes(search) || email.includes(search);
+        const matchRole =
+            !role ||
+            (role === "admin" && user.is_admin) ||
+            (role === "user" && !user.is_admin);
 
-                const email = prompt("Email:", user.email);
-                if (!email) return;
+        return matchSearch && matchRole;
+    });
 
-                const isAdmin = confirm("Make admin? OK = Yes, Cancel = No");
+    if (filtered.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="7">No users found.</td></tr>`;
+        return;
+    }
 
+    filtered.forEach(user => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+            <td>${user.id}</td>
+            <td>${user.username}</td>
+            <td>${user.email}</td>
+            <td>${user.is_admin ? '<span class="role-admin">Admin</span>' : '<span class="role-user">User</span>'}</td>
+            <td>${user.active_plan || "Free"}</td>
+            <td>${user.created_at || "-"}</td>
+            <td>
+                <div class="table-actions">
+                    <button class="edit-btn">Edit</button>
+                    <button class="delete-btn">Delete</button>
+                </div>
+            </td>
+        `;
+
+        tr.querySelector(".edit-btn").addEventListener("click", async () => {
+            const username = prompt("Username:", user.username);
+            if (!username) return;
+
+            const email = prompt("Email:", user.email);
+            if (!email) return;
+
+            const isAdmin = confirm("Make admin? OK = Yes, Cancel = No");
+
+            try {
                 const res = await fetch(`${API_BASE}/users/${user.id}`, {
                     method: "PUT",
                     headers: authJsonHeaders(),
@@ -86,11 +113,15 @@ async function loadUsers() {
                 const result = await res.json();
                 alert(result.message || result.error);
                 loadUsers();
-            });
+            } catch (error) {
+                alert("Error updating user");
+            }
+        });
 
-            tr.querySelector(".delete-btn").addEventListener("click", async () => {
-                if (!confirm("Delete this user?")) return;
+        tr.querySelector(".delete-btn").addEventListener("click", async () => {
+            if (!confirm("Delete this user?")) return;
 
+            try {
                 const res = await fetch(`${API_BASE}/users/${user.id}`, {
                     method: "DELETE",
                     headers: authOnlyHeaders()
@@ -99,14 +130,17 @@ async function loadUsers() {
                 const result = await res.json();
                 alert(result.message || result.error);
                 loadUsers();
-            });
-
-            tbody.appendChild(tr);
+            } catch (error) {
+                alert("Error deleting user");
+            }
         });
-    } catch (error) {
-        document.getElementById("usersTableBody").innerHTML =
-            `<tr><td colspan="7">Error loading users.</td></tr>`;
-    }
+
+        tbody.appendChild(tr);
+    });
 }
 
-window.addEventListener("DOMContentLoaded", loadUsers);
+window.addEventListener("DOMContentLoaded", () => {
+    loadUsers();
+    document.getElementById("searchUserInput").addEventListener("input", renderUsers);
+    document.getElementById("roleFilter").addEventListener("change", renderUsers);
+});

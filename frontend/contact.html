@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Contact - API Tool</title>
+    <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<div class="contact-page-shell">
+    <div class="contact-page-container">
+
+        <header class="contact-hero">
+            <div class="contact-hero-content">
+                <span class="contact-badge">Support & Contact</span>
+<h1>Contact our team</h1>
+<p>
+    Reach out for support, business enquiries, onboarding help, or general product questions.
+</p>
+            </div>
+
+            <div class="contact-hero-actions">
+                <button id="themeToggle" class="theme-btn">☀ Light</button>
+                <a href="/dashboard.html" class="back-btn">← Dashboard</a>
+            </div>
+        </header>
+
+        <section class="contact-main-grid">
+            <div class="contact-info-panel">
+                <h2>Contact Information</h2>
+                <p class="contact-info-text">
+                    Our team is available for support, business queries, and onboarding help.
+                </p>
+
+                <div class="contact-list">
+                    <div class="contact-list-item">
+                        <div class="contact-icon">📞</div>
+                        <div>
+                            <h3>Phone</h3>
+                            <p>+91 98765 43210</p>
+                        </div>
+                    </div>
+
+                    <div class="contact-list-item">
+                        <div class="contact-icon">📧</div>
+                        <div>
+                            <h3>Email</h3>
+                            <p><a href="mailto:support@apitool.com">support@apitool.com</a></p>
+                        </div>
+                    </div>
+
+                    <div class="contact-list-item">
+                        <div class="contact-icon">💼</div>
+                        <div>
+                            <h3>LinkedIn</h3>
+                            <p><a href="https://www.linkedin.com" target="_blank">linkedin.com/company/apitool</a></p>
+                        </div>
+                    </div>
+
+                    <div class="contact-list-item">
+                        <div class="contact-icon">🐦</div>
+                        <div>
+                            <h3>Twitter</h3>
+                            <p><a href="https://twitter.com" target="_blank">twitter.com/apitool</a></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="contact-form-panel">
+                <h2>Send Message</h2>
+                <p class="contact-info-text">
+                    Fill out the form and your message will be stored in the admin queries list.
+                </p>
+
+                <label for="queryName">Name</label>
+                <input type="text" id="queryName" placeholder="Enter your name">
+
+                <label for="queryEmail">Email</label>
+                <input type="email" id="queryEmail" placeholder="Enter your email">
+
+                <label for="querySubject">Subject</label>
+                <input type="text" id="querySubject" placeholder="Enter subject">
+
+                <label for="queryMessage">Message</label>
+                <textarea id="queryMessage" placeholder="Write your message here"></textarea>
+
+                <div class="button-group" style="margin-top: 16px;">
+                    <button id="sendQueryBtn" type="button">Send Message</button>
+                </div>
+            </div>
+        </section>
+
+        <section class="contact-bottom-strip">
+            <div class="contact-strip-card">
+                <h3>Fast Support</h3>
+                <p>Quick help for product and account-related questions.</p>
+            </div>
+            <div class="contact-strip-card">
+                <h3>Business Enquiries</h3>
+                <p>Contact us for enterprise onboarding and partnerships.</p>
+            </div>
+            <div class="contact-strip-card">
+                <h3>Trusted Platform</h3>
+                <p>Built for individuals, teams, and organizations.</p>
+            </div>
+        </section>
+
+    </div>
+</div>
+
+<script src="/theme.js"></script>
+<script src="/contact.js"></script>
+</body>
+</html>

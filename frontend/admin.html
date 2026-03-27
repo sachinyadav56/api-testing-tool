@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Panel - API Tool</title>
     <link rel="stylesheet" href="/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
 <div class="admin-page-wrapper">
@@ -23,6 +24,7 @@
                 <a href="/history.html" class="back-btn">History</a>
                 <a href="/collections.html" class="back-btn">Collections</a>
                 <a href="/purchases.html" class="back-btn">Purchases</a>
+                <a href="/queries.html" class="back-btn">Queries</a>
                 <button id="logoutBtn" class="danger-btn">Logout</button>
             </div>
         </div>
@@ -30,8 +32,7 @@
         <section class="hero-card">
             <h2>Platform Administration</h2>
             <p>
-                Manage users, CMS content, purchase records, request history, collections,
-                and full platform controls from one place.
+                Manage users, content, purchases, collections, history, and monitor platform analytics.
             </p>
         </section>
 
@@ -82,7 +83,42 @@
                 <h3>Purchases</h3>
                 <p>View real user purchases</p>
             </a>
+
+            
+
         </section>
+
+        <div class="main-grid">
+            <section class="card">
+                <div class="section-head">
+                    <h2>Requests Overview</h2>
+                </div>
+                <canvas id="requestsChart" height="120"></canvas>
+            </section>
+
+            <section class="card">
+                <div class="section-head">
+                    <h2>Plan Distribution</h2>
+                </div>
+                <canvas id="plansChart" height="120"></canvas>
+            </section>
+        </div>
+
+        <div class="bottom-grid">
+            <section class="card">
+                <div class="section-head">
+                    <h2>Method Usage</h2>
+                </div>
+                <canvas id="methodsChart" height="120"></canvas>
+            </section>
+
+            <section class="card">
+                <div class="section-head">
+                    <h2>Purchase Status</h2>
+                </div>
+                <canvas id="purchaseStatusChart" height="120"></canvas>
+            </section>
+        </div>
 
     </div>
 </div>

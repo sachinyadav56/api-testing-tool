@@ -2,9 +2,15 @@ const API_BASE = window.location.origin;
 const loggedInUser = JSON.parse(localStorage.getItem("loggedInUser"));
 const token = localStorage.getItem("token");
 
-if (!loggedInUser || !token || !loggedInUser.is_admin) {
-    window.location.href = "login.html";
+if (!loggedInUser || !token) {
+    window.location.href = "/login.html";
 }
+
+if (!loggedInUser.is_admin) {
+    window.location.href = "/dashboard.html";
+}
+
+let allCollections = [];
 
 function authOnlyHeaders() {
     return {
@@ -26,39 +32,52 @@ async function loadCollections() {
         });
 
         const text = await response.text();
-        let data;
+        let data = [];
 
         try {
             data = JSON.parse(text);
         } catch {
             document.getElementById("collectionsTableBody").innerHTML =
-                `<tr><td colspan="5">Backend returned HTML instead of JSON. Check /admin/collections route.</td></tr>`;
+                `<tr><td colspan="6">Backend returned HTML instead of JSON.</td></tr>`;
             return;
         }
 
-        const tbody = document.getElementById("collectionsTableBody");
-        tbody.innerHTML = "";
-
-        if (!Array.isArray(data) || data.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="5">No collections found.</td></tr>`;
-            return;
-        }
-
-        data.forEach(item => {
-            const tr = document.createElement("tr");
-            tr.innerHTML = `
-                <td><input type="checkbox" class="collection-checkbox" value="${item.id}"></td>
-                <td>${item.username || "-"}</td>
-                <td>${item.method || "-"}</td>
-                <td>${item.url || "-"}</td>
-                <td>${item.created_at || "-"}</td>
-            `;
-            tbody.appendChild(tr);
-        });
+        allCollections = Array.isArray(data) ? data : [];
+        renderCollections();
     } catch (error) {
         document.getElementById("collectionsTableBody").innerHTML =
-            `<tr><td colspan="5">Error loading collections: ${error.message}</td></tr>`;
+            `<tr><td colspan="6">Error loading collections.</td></tr>`;
     }
+}
+
+function renderCollections() {
+    const search = document.getElementById("searchCollection").value.trim().toLowerCase();
+    const tbody = document.getElementById("collectionsTableBody");
+    tbody.innerHTML = "";
+
+    const filtered = allCollections.filter(item => {
+        const name = (item.name || "").toLowerCase();
+        const url = (item.url || "").toLowerCase();
+        return name.includes(search) || url.includes(search);
+    });
+
+    if (filtered.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6">No collections found.</td></tr>`;
+        return;
+    }
+
+    filtered.forEach(item => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+            <td><input type="checkbox" class="collection-checkbox" value="${item.id}"></td>
+            <td>${item.username || "-"}</td>
+            <td>${item.name || "-"}</td>
+            <td>${item.method || "-"}</td>
+            <td>${item.url || "-"}</td>
+            <td>${item.created_at || "-"}</td>
+        `;
+        tbody.appendChild(tr);
+    });
 }
 
 async function deleteSelectedCollections() {
@@ -83,7 +102,7 @@ async function deleteSelectedCollections() {
         alert(data.message || data.error);
         loadCollections();
     } catch (error) {
-        alert("Error deleting collections: " + error.message);
+        alert("Error deleting collections");
     }
 }
 
@@ -99,4 +118,5 @@ window.addEventListener("DOMContentLoaded", () => {
     loadCollections();
     document.getElementById("deleteSelectedCollectionsBtn").addEventListener("click", deleteSelectedCollections);
     document.getElementById("selectAllCollections").addEventListener("change", toggleAllCollections);
+    document.getElementById("searchCollection").addEventListener("input", renderCollections);
 });

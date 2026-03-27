@@ -2,9 +2,15 @@ const API_BASE = window.location.origin;
 const loggedInUser = JSON.parse(localStorage.getItem("loggedInUser"));
 const token = localStorage.getItem("token");
 
-if (!loggedInUser || !token || !loggedInUser.is_admin) {
-    window.location.href = "login.html";
+if (!loggedInUser || !token) {
+    window.location.href = "/login.html";
 }
+
+if (!loggedInUser.is_admin) {
+    window.location.href = "/dashboard.html";
+}
+
+let allHistory = [];
 
 function authOnlyHeaders() {
     return {
@@ -26,40 +32,54 @@ async function loadHistory() {
         });
 
         const text = await response.text();
-        let data;
+        let data = [];
 
         try {
             data = JSON.parse(text);
         } catch {
             document.getElementById("historyTableBody").innerHTML =
-                `<tr><td colspan="6">Backend returned HTML instead of JSON. Check /admin/history route.</td></tr>`;
+                `<tr><td colspan="6">Backend returned HTML instead of JSON.</td></tr>`;
             return;
         }
 
-        const tbody = document.getElementById("historyTableBody");
-        tbody.innerHTML = "";
-
-        if (!Array.isArray(data) || data.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="6">No history found.</td></tr>`;
-            return;
-        }
-
-        data.forEach(item => {
-            const tr = document.createElement("tr");
-            tr.innerHTML = `
-                <td><input type="checkbox" class="history-checkbox" value="${item.id}"></td>
-                <td>${item.username || "-"}</td>
-                <td>${item.method || "-"}</td>
-                <td>${item.status_code || "-"}</td>
-                <td>${item.url || "-"}</td>
-                <td>${item.created_at || "-"}</td>
-            `;
-            tbody.appendChild(tr);
-        });
+        allHistory = Array.isArray(data) ? data : [];
+        renderHistory();
     } catch (error) {
         document.getElementById("historyTableBody").innerHTML =
-            `<tr><td colspan="6">Error loading history: ${error.message}</td></tr>`;
+            `<tr><td colspan="6">Error loading history.</td></tr>`;
     }
+}
+
+function renderHistory() {
+    const search = document.getElementById("searchHistory").value.trim().toLowerCase();
+    const method = document.getElementById("methodFilter").value;
+    const tbody = document.getElementById("historyTableBody");
+    tbody.innerHTML = "";
+
+    const filtered = allHistory.filter(item => {
+        const url = (item.url || "").toLowerCase();
+        const matchSearch = url.includes(search);
+        const matchMethod = !method || item.method === method;
+        return matchSearch && matchMethod;
+    });
+
+    if (filtered.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6">No history found.</td></tr>`;
+        return;
+    }
+
+    filtered.forEach(item => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+            <td><input type="checkbox" class="history-checkbox" value="${item.id}"></td>
+            <td>${item.username || "-"}</td>
+            <td>${item.method || "-"}</td>
+            <td>${item.status_code || "-"}</td>
+            <td>${item.url || "-"}</td>
+            <td>${item.created_at || "-"}</td>
+        `;
+        tbody.appendChild(tr);
+    });
 }
 
 async function deleteSelectedHistory() {
@@ -84,7 +104,7 @@ async function deleteSelectedHistory() {
         alert(data.message || data.error);
         loadHistory();
     } catch (error) {
-        alert("Error deleting history: " + error.message);
+        alert("Error deleting history");
     }
 }
 
@@ -100,4 +120,6 @@ window.addEventListener("DOMContentLoaded", () => {
     loadHistory();
     document.getElementById("deleteSelectedHistoryBtn").addEventListener("click", deleteSelectedHistory);
     document.getElementById("selectAllHistory").addEventListener("change", toggleAllHistory);
+    document.getElementById("searchHistory").addEventListener("input", renderHistory);
+    document.getElementById("methodFilter").addEventListener("change", renderHistory);
 });

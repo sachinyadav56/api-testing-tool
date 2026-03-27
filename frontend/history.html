@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>History</title>
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="/style.css">
 </head>
 <body>
 <div class="admin-page-wrapper">
@@ -18,12 +18,27 @@
 
             <div class="topbar-actions">
                 <button id="themeToggle" class="theme-btn">☀ Light</button>
-                <a href="admin.html" class="back-btn">← Dashboard</a>
+                <a href="/admin.html" class="back-btn">← Dashboard</a>
                 <button id="deleteSelectedHistoryBtn" class="danger-btn">Delete Selected</button>
             </div>
         </div>
 
         <section class="card">
+            <div class="section-head">
+                <h2>History</h2>
+                <div class="button-group">
+                    <input type="text" id="searchHistory" placeholder="Search URL">
+                    <select id="methodFilter">
+                        <option value="">All Methods</option>
+                        <option value="GET">GET</option>
+                        <option value="POST">POST</option>
+                        <option value="PUT">PUT</option>
+                        <option value="PATCH">PATCH</option>
+                        <option value="DELETE">DELETE</option>
+                    </select>
+                </div>
+            </div>
+
             <div class="table-wrapper">
                 <table class="admin-table">
                     <thead>
@@ -48,7 +63,7 @@
     </div>
 </div>
 
-<script src="theme.js"></script>
-<script src="history.js"></script>
+<script src="/theme.js"></script>
+<script src="/history.js"></script>
 </body>
 </html>
