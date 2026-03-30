@@ -1,48 +1,48 @@
 :root {
-    --bg: #0b1220;
-    --bg-soft: #111a2e;
-    --bg-card: rgba(17, 26, 46, 0.82);
-    --bg-hover: #18243d;
-    --text: #eef4ff;
+    --bg: #0a1020;
+    --bg-soft: #10192d;
+    --bg-card: #13203a;
+    --bg-hover: #1a2947;
+    --text: #f8fbff;
     --text-soft: #9fb0c9;
     --border: rgba(148, 163, 184, 0.16);
 
-    --primary: #4f7cff;
-    --primary-hover: #3d68eb;
-    --secondary: #7c5cff;
+    --primary: #06b6d4;
+    --primary-hover: #0891b2;
+    --secondary: #14b8a6;
     --success: #22c55e;
     --warning: #f59e0b;
     --danger: #ef4444;
 
-    --shadow: 0 18px 50px rgba(0, 0, 0, 0.28);
+    --shadow: 0 18px 45px rgba(0, 0, 0, 0.28);
     --radius: 24px;
     --radius-sm: 14px;
 
-    --gradient-main: linear-gradient(135deg, #4f7cff, #7c5cff);
-    --gradient-soft: linear-gradient(135deg, rgba(79, 124, 255, 0.14), rgba(124, 92, 255, 0.14));
-    --glass: rgba(13, 20, 34, 0.72);
+    --gradient-main: linear-gradient(135deg, #0f172a 0%, #0ea5e9 55%, #14b8a6 100%);
+    --gradient-soft: linear-gradient(135deg, rgba(6, 182, 212, 0.14), rgba(20, 184, 166, 0.12));
+    --glass: rgba(10, 18, 32, 0.72);
 }
 
 :root[data-theme="light"] {
-    --bg: #f5f7fb;
-    --bg-soft: #ffffff;
-    --bg-card: rgba(255, 255, 255, 0.88);
-    --bg-hover: #eef3fb;
-    --text: #142033;
-    --text-soft: #64748b;
+    --bg: #f4f8fc;
+    --bg-soft: rgba(255, 255, 255, 0.92);
+    --bg-card: #ffffff;
+    --bg-hover: #eaf4fb;
+    --text: #0f172a;
+    --text-soft: #5f738c;
     --border: rgba(15, 23, 42, 0.08);
 
-    --primary: #356dff;
-    --primary-hover: #2558db;
-    --secondary: #6d4dff;
+    --primary: #0891b2;
+    --primary-hover: #0e7490;
+    --secondary: #0f766e;
     --success: #16a34a;
     --warning: #d97706;
     --danger: #dc2626;
 
     --shadow: 0 18px 40px rgba(15, 23, 42, 0.08);
-    --gradient-main: linear-gradient(135deg, #356dff, #6d4dff);
-    --gradient-soft: linear-gradient(135deg, rgba(53, 109, 255, 0.10), rgba(109, 77, 255, 0.10));
-    --glass: rgba(255, 255, 255, 0.78);
+    --gradient-main: linear-gradient(135deg, #0f172a 0%, #0891b2 55%, #14b8a6 100%);
+    --gradient-soft: linear-gradient(135deg, rgba(8, 145, 178, 0.10), rgba(20, 184, 166, 0.10));
+    --glass: rgba(255, 255, 255, 0.80);
 }
 
 * {
@@ -55,8 +55,8 @@ html, body {
     min-height: 100vh;
     font-family: "Inter", "Segoe UI", Arial, sans-serif;
     background:
-        radial-gradient(circle at top left, rgba(79, 124, 255, 0.10), transparent 28%),
-        radial-gradient(circle at top right, rgba(124, 92, 255, 0.10), transparent 26%),
+        radial-gradient(circle at top left, rgba(6, 182, 212, 0.10), transparent 28%),
+        radial-gradient(circle at top right, rgba(20, 184, 166, 0.10), transparent 26%),
         var(--bg);
     color: var(--text);
     transition: background 0.25s ease, color 0.25s ease;
@@ -90,8 +90,8 @@ select {
 input:focus,
 textarea:focus,
 select:focus {
-    border-color: rgba(79, 124, 255, 0.55);
-    box-shadow: 0 0 0 4px rgba(79, 124, 255, 0.12);
+    border-color: rgba(6, 182, 212, 0.55);
+    box-shadow: 0 0 0 4px rgba(6, 182, 212, 0.12);
 }
 
 textarea {
@@ -108,7 +108,7 @@ button {
     cursor: pointer;
     font-weight: 700;
     transition: 0.2s ease;
-    box-shadow: 0 10px 24px rgba(53, 109, 255, 0.22);
+    box-shadow: 0 10px 24px rgba(6, 182, 212, 0.22);
 }
 
 button:hover {
@@ -125,6 +125,8 @@ button:hover {
     color: var(--text);
     border: 1px solid var(--border);
     box-shadow: none;
+    padding: 10px 16px;
+    border-radius: 12px;
 }
 
 .theme-btn:hover {
@@ -181,8 +183,8 @@ button:hover {
 
 .auth-page {
     background:
-        radial-gradient(circle at top left, rgba(79, 124, 255, 0.20), transparent 30%),
-        radial-gradient(circle at bottom right, rgba(124, 92, 255, 0.18), transparent 28%),
+        radial-gradient(circle at top left, rgba(6, 182, 212, 0.20), transparent 30%),
+        radial-gradient(circle at bottom right, rgba(20, 184, 166, 0.18), transparent 28%),
         linear-gradient(135deg, #0b1220, #131d31);
 }
 
@@ -408,7 +410,7 @@ header p,
 
 .quick-card:hover {
     transform: translateY(-5px);
-    border-color: rgba(79,124,255,0.35);
+    border-color: rgba(6, 182, 212, 0.35);
 }
 
 .quick-card:hover::before {
@@ -453,7 +455,7 @@ header p,
     background: var(--gradient-main);
     color: #fff;
     border-radius: 30px;
-    box-shadow: 0 22px 60px rgba(79, 124, 255, 0.22);
+    box-shadow: 0 22px 60px rgba(6, 182, 212, 0.22);
 }
 
 .hero-card {
@@ -576,8 +578,8 @@ pre {
 }
 
 .method-badge {
-    background: rgba(79, 124, 255, 0.14);
-    color: #7ea2ff;
+    background: rgba(6, 182, 212, 0.14);
+    color: #67e8f9;
 }
 
 .status-badge {
@@ -585,18 +587,31 @@ pre {
     color: var(--text);
 }
 
+/* public pages */
+.public-page {
+    min-height: 100vh;
+    background:
+        radial-gradient(circle at top left, rgba(6, 182, 212, 0.10), transparent 28%),
+        radial-gradient(circle at top right, rgba(20, 184, 166, 0.10), transparent 26%),
+        var(--bg);
+    color: var(--text);
+}
+
 .public-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    gap: 16px;
+    gap: 20px;
+    flex-wrap: wrap;
     padding: 18px 30px;
     border-bottom: 1px solid var(--border);
-    background: rgba(11, 18, 32, 0.65);
+    background: rgba(11, 18, 32, 0.78);
     backdrop-filter: blur(16px);
     position: sticky;
     top: 0;
     z-index: 50;
+    border-radius: 0 0 24px 24px;
+    margin-bottom: 0;
 }
 
 .public-brand {
@@ -638,10 +653,16 @@ pre {
     width: 100%;
 }
 
+.public-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
 .dynamic-page-content {
     max-width: 1240px;
     margin: 0 auto;
-    padding: 38px 20px 70px;
+    padding: 42px 20px 70px;
 }
 
 .loading-box {
@@ -659,6 +680,17 @@ pre {
     margin-bottom: 34px;
     position: relative;
     overflow: hidden;
+}
+
+.premium-hero::before,
+.contact-hero::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background:
+        radial-gradient(circle at 85% 15%, rgba(255,255,255,0.12), transparent 18%),
+        radial-gradient(circle at 20% 80%, rgba(255,255,255,0.08), transparent 18%);
+    pointer-events: none;
 }
 
 .premium-hero::after,
@@ -722,10 +754,18 @@ pre {
     color: #111827;
 }
 
+.hero-btn.primary:hover {
+    background: #ecfeff;
+}
+
 .hero-btn.secondary {
     background: rgba(255,255,255,0.14);
     color: white;
     border: 1px solid rgba(255,255,255,0.22);
+}
+
+.hero-btn.secondary:hover {
+    background: rgba(255,255,255,0.20);
 }
 
 .feature-grid {
@@ -746,7 +786,7 @@ pre {
 .stat-card-public:hover,
 .contact-strip-card:hover {
     transform: translateY(-5px);
-    border-color: rgba(79, 124, 255, 0.35);
+    border-color: rgba(6, 182, 212, 0.35);
 }
 
 .feature-icon {
@@ -755,8 +795,8 @@ pre {
     display: grid;
     place-items: center;
     border-radius: 14px;
-    background: rgba(79, 124, 255, 0.12);
-    color: #7ea2ff;
+    background: rgba(6, 182, 212, 0.12);
+    color: #67e8f9;
     font-weight: 900;
     margin-bottom: 14px;
 }
@@ -890,7 +930,7 @@ pre {
     border-radius: 14px;
     display: grid;
     place-items: center;
-    background: rgba(79, 124, 255, 0.12);
+    background: rgba(6, 182, 212, 0.12);
     font-size: 20px;
     flex-shrink: 0;
 }
@@ -1040,6 +1080,12 @@ canvas {
     min-width: 220px;
 }
 
+#userLoginModeBtn,
+#adminLoginModeBtn {
+    flex: 1;
+    min-width: 140px;
+}
+
 @media (max-width: 1100px) {
     .stats-grid,
     .stats-grid-public,
@@ -1112,37 +1158,4 @@ canvas {
         flex-direction: column;
         align-items: flex-start;
     }
-}
-
-.public-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 20px;
-}
-
-.public-actions {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-}
-
-.theme-btn {
-    padding: 8px 14px;
-    border-radius: 8px;
-    border: 1px solid var(--border);
-    background: var(--glass);
-    cursor: pointer;
-    font-weight: 600;
-    transition: 0.2s;
-}
-
-.theme-btn:hover {
-    transform: translateY(-1px);
-}
-
-#userLoginModeBtn,
-#adminLoginModeBtn {
-    flex: 1;
-    min-width: 140px;
 }
