@@ -240,6 +240,11 @@ def serve_dynamic_page(slug):
     return send_from_directory(FRONTEND_DIR, "page.html")
 
 
+@app.route("/admin-settings.html")
+def serve_admin_settings_page():
+    return send_from_directory(FRONTEND_DIR, "admin-settings.html")
+
+
 @app.route("/<path:filename>")
 def serve_static_file(filename):
     file_path = os.path.join(FRONTEND_DIR, filename)
