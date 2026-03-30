@@ -12,8 +12,13 @@
             <h1 id="formTitle">Welcome Back</h1>
             <p class="subtitle" id="formSubtitle">Please enter your details to login.</p>
 
+            <div class="button-group" style="margin-bottom:16px;">
+                <button type="button" id="userLoginModeBtn" class="theme-btn">Login as User</button>
+                <button type="button" id="adminLoginModeBtn" class="theme-btn">Login as Admin</button>
+            </div>
+
             <form id="authForm">
-                <div class="input-group" id="usernameGroup" style="display: none;">
+                <div class="input-group" id="usernameGroup" style="display:none;">
                     <input type="text" id="username" placeholder="Enter username">
                 </div>
 
@@ -28,14 +33,14 @@
                 <button type="submit" class="btn" id="submitBtn">Login</button>
             </form>
 
-            <p id="messageBox" style="margin-top: 14px;"></p>
+            <p id="messageBox" style="margin-top:14px;"></p>
 
-            <p class="toggle-text" style="margin-top: 20px;">
+            <p class="toggle-text" style="margin-top:20px;">
                 <span id="toggleText">Don't have an account?</span>
                 <span class="toggle-link" id="toggleModeBtn">Register</span>
             </p>
 
-            <p style="margin-top: 18px;">
+            <p style="margin-top:18px;">
                 <a href="/page/home" class="toggle-link" style="text-decoration:none;">← Back to Home</a>
             </p>
         </div>
@@ -43,6 +48,7 @@
 
     <script>
         const API_BASE = window.location.origin;
+
         const authForm = document.getElementById("authForm");
         const usernameGroup = document.getElementById("usernameGroup");
         const usernameInput = document.getElementById("username");
@@ -54,8 +60,11 @@
         const formTitle = document.getElementById("formTitle");
         const formSubtitle = document.getElementById("formSubtitle");
         const messageBox = document.getElementById("messageBox");
+        const userLoginModeBtn = document.getElementById("userLoginModeBtn");
+        const adminLoginModeBtn = document.getElementById("adminLoginModeBtn");
 
         let isLogin = true;
+        let loginRole = "user"; // user | admin
 
         function setMessage(text, type = "error") {
             messageBox.textContent = text;
@@ -67,12 +76,29 @@
             messageBox.className = "";
         }
 
+        function updateLoginModeButtons() {
+            if (loginRole === "admin") {
+                adminLoginModeBtn.style.background = "var(--primary)";
+                adminLoginModeBtn.style.color = "#fff";
+                userLoginModeBtn.style.background = "var(--bg-hover)";
+                userLoginModeBtn.style.color = "var(--text)";
+            } else {
+                userLoginModeBtn.style.background = "var(--primary)";
+                userLoginModeBtn.style.color = "#fff";
+                adminLoginModeBtn.style.background = "var(--bg-hover)";
+                adminLoginModeBtn.style.color = "var(--text)";
+            }
+        }
+
         function updateMode() {
             clearMessage();
+            updateLoginModeButtons();
 
             if (isLogin) {
-                formTitle.textContent = "Welcome Back";
-                formSubtitle.textContent = "Please enter your details to login.";
+                formTitle.textContent = loginRole === "admin" ? "Admin Login" : "User Login";
+                formSubtitle.textContent = loginRole === "admin"
+                    ? "Enter admin credentials to access the admin panel."
+                    : "Please enter your details to login.";
                 submitBtn.textContent = "Login";
                 toggleText.textContent = "Don't have an account?";
                 toggleModeBtn.textContent = "Register";
@@ -86,8 +112,23 @@
                 toggleModeBtn.textContent = "Login";
                 usernameGroup.style.display = "block";
                 usernameInput.required = true;
+
+                loginRole = "user";
+                updateLoginModeButtons();
             }
         }
+
+        userLoginModeBtn.addEventListener("click", () => {
+            if (!isLogin) return;
+            loginRole = "user";
+            updateMode();
+        });
+
+        adminLoginModeBtn.addEventListener("click", () => {
+            if (!isLogin) return;
+            loginRole = "admin";
+            updateMode();
+        });
 
         toggleModeBtn.addEventListener("click", () => {
             isLogin = !isLogin;
@@ -110,7 +151,7 @@
 
             const endpoint = isLogin ? "/login" : "/register";
             const payload = isLogin
-                ? { email, password }
+                ? { email, password, login_as: loginRole }
                 : { username, email, password };
 
             submitBtn.disabled = true;
@@ -148,6 +189,7 @@
                 } else {
                     setMessage("Registration successful. Please login now.", "success");
                     isLogin = true;
+                    loginRole = "user";
                     authForm.reset();
                     updateMode();
                 }

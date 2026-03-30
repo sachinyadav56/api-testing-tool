@@ -1140,3 +1140,9 @@ canvas {
 .theme-btn:hover {
     transform: translateY(-1px);
 }
+
+#userLoginModeBtn,
+#adminLoginModeBtn {
+    flex: 1;
+    min-width: 140px;
+}

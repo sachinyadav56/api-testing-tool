@@ -301,9 +301,13 @@ def login():
 
     email = data.get("email", "").strip().lower()
     password = data.get("password", "").strip()
+    login_as = data.get("login_as", "user").strip().lower()
 
     if not email or not password:
         return jsonify({"error": "Email and password are required"}), 400
+
+    if login_as not in ["user", "admin"]:
+        return jsonify({"error": "Invalid login type"}), 400
 
     try:
         with get_db_connection() as conn:
@@ -316,6 +320,12 @@ def login():
 
         if not check_password_hash(user["password"], password):
             return jsonify({"error": "Invalid password"}), 401
+
+        if login_as == "admin" and not bool(user["is_admin"]):
+            return jsonify({"error": "Only admin credentials are allowed here"}), 403
+
+        if login_as == "user" and bool(user["is_admin"]):
+            return jsonify({"error": "Use admin login for admin account"}), 403
 
         access_token = create_access_token(
             identity=str(user["id"]),
