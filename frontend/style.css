@@ -321,7 +321,7 @@ header p,
 .contact-bottom-strip,
 .docs-layout {
     display: grid;
-    gap: 20px;
+    gap: 16px;
 }
 
 .main-grid,
@@ -331,16 +331,23 @@ header p,
 
 .stats-grid {
     grid-template-columns: repeat(4, 1fr);
-    margin-bottom: 22px;
+    margin-bottom: 18px;
 }
 
 .quick-links-grid {
     grid-template-columns: repeat(4, 1fr);
-    margin-bottom: 22px;
+    margin-bottom: 18px;
 }
 
 .overview-list {
     grid-template-columns: 1fr 1fr;
+}
+
+.feature-grid,
+.pricing-grid,
+.stats-grid-public {
+    gap: 14px;
+    margin-bottom: 18px;
 }
 
 .card,
@@ -375,7 +382,7 @@ header p,
 }
 
 .stat-box {
-    padding: 22px;
+    padding: 20px;
 }
 
 .stat-box h3 {
@@ -393,7 +400,7 @@ header p,
 
 .quick-card {
     text-decoration: none;
-    padding: 24px;
+    padding: 22px;
     transition: 0.22s ease;
     position: relative;
     overflow: hidden;
@@ -460,7 +467,7 @@ header p,
 
 .hero-card {
     padding: 34px;
-    margin-bottom: 24px;
+    margin-bottom: 20px;
 }
 
 .hero-card h2 {
@@ -660,9 +667,9 @@ pre {
 }
 
 .dynamic-page-content {
-    max-width: 1240px;
+    max-width: 1100px;
     margin: 0 auto;
-    padding: 42px 20px 70px;
+    padding: 32px 16px 60px;
 }
 
 .loading-box {
@@ -676,8 +683,8 @@ pre {
 
 .premium-hero,
 .contact-hero {
-    padding: 78px 48px;
-    margin-bottom: 34px;
+    padding: 72px 42px;
+    margin-bottom: 24px;
     position: relative;
     overflow: hidden;
 }
@@ -697,10 +704,10 @@ pre {
 .contact-hero::after {
     content: "";
     position: absolute;
-    width: 280px;
-    height: 280px;
-    right: -60px;
-    top: -80px;
+    width: 240px;
+    height: 240px;
+    right: -50px;
+    top: -60px;
     border-radius: 50%;
     background: rgba(255,255,255,0.08);
 }
@@ -726,7 +733,7 @@ pre {
 
 .premium-hero h1,
 .contact-hero h1 {
-    font-size: 56px;
+    font-size: 54px;
     line-height: 1.04;
     margin-bottom: 16px;
     letter-spacing: -1px;
@@ -772,13 +779,29 @@ pre {
     grid-template-columns: repeat(3, 1fr);
 }
 
+.pricing-grid {
+    grid-template-columns: repeat(3, 1fr);
+}
+
+.stats-grid-public {
+    grid-template-columns: repeat(4, 1fr);
+}
+
 .feature-card,
 .stat-card-public,
 .pricing-card,
 .text-block,
 .contact-strip-card {
-    padding: 24px;
+    padding: 18px;
     transition: 0.22s ease;
+}
+
+.feature-card,
+.pricing-card {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
 }
 
 .feature-card:hover,
@@ -814,10 +837,6 @@ pre {
     line-height: 1.65;
 }
 
-.stats-grid-public {
-    grid-template-columns: repeat(4, 1fr);
-}
-
 .stat-card-public h3 {
     font-size: 34px;
     margin-bottom: 8px;
@@ -826,10 +845,6 @@ pre {
 .stat-card-public p {
     color: var(--text-soft);
     margin: 0;
-}
-
-.pricing-grid {
-    grid-template-columns: repeat(3, 1fr);
 }
 
 .pricing-card .price {
@@ -846,6 +861,7 @@ pre {
     padding-left: 18px;
     color: var(--text-soft);
     line-height: 1.85;
+    margin: 0;
 }
 
 .docs-layout {

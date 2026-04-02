@@ -181,9 +181,7 @@ def serve_dashboard_page():
     return send_from_directory(FRONTEND_DIR, "dashboard.html")
 
 
-@app.route("/docs.html")
-def serve_docs_page():
-    return send_from_directory(FRONTEND_DIR, "docs.html")
+
 
 @app.route("/settings.html")
 def serve_settings_page():
@@ -203,6 +201,10 @@ def serve_admin_page():
 @app.route("/users.html")
 def serve_users_page():
     return send_from_directory(FRONTEND_DIR, "users.html")
+
+@app.route("/docs.html")
+def serve_docs_page():
+    return send_from_directory(FRONTEND_DIR, "docs.html")
 
 
 @app.route("/cms.html")
