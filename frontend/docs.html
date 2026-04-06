@@ -6,6 +6,8 @@
     <title>Documentation - API Tool</title>
     <link rel="stylesheet" href="/style.css">
 </head>
+
+
 <body>
 <div class="docs-page">
     <div class="docs-container">
@@ -19,6 +21,8 @@
 
             <div class="topbar-actions">
                 <button id="themeToggle" class="theme-btn">☀ Light</button>
+                  <button id="downloadPdfBtn" class="theme-btn"> ⬇ Download Docs</button>
+       
                 <a href="/page/home" class="back-btn">← Home</a>
             </div>
         </div>
@@ -257,5 +261,44 @@
 </div>
 
 <script src="/theme.js"></script>
+<script src="/theme.js"></script>
+
+<script>
+document.getElementById("downloadPdfBtn").addEventListener("click", async () => {
+    const { jsPDF } = window.jspdf;
+
+    const element = document.querySelector(".docs-content");
+
+    const canvas = await html2canvas(element, {
+        scale: 2,
+        useCORS: true
+    });
+
+    const imgData = canvas.toDataURL("image/png");
+
+    const pdf = new jsPDF("p", "mm", "a4");
+
+    const imgWidth = 210;
+    const pageHeight = 297;
+    const imgHeight = canvas.height * imgWidth / canvas.width;
+
+    let heightLeft = imgHeight;
+    let position = 0;
+
+    pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight);
+    heightLeft -= pageHeight;
+
+    while (heightLeft > 0) {
+        position = heightLeft - imgHeight;
+        pdf.addPage();
+        pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight);
+        heightLeft -= pageHeight;
+    }
+
+    pdf.save("API_Tool_Documentation.pdf");
+});
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 </body>
 </html>
