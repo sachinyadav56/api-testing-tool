@@ -18,9 +18,10 @@ from werkzeug.security import generate_password_hash, check_password_hash
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 PROJECT_ROOT = os.path.abspath(os.path.join(BASE_DIR, ".."))
 FRONTEND_DIR = os.path.join(PROJECT_ROOT, "frontend")
+STATIC_DIR = os.path.join(PROJECT_ROOT, "static")
 DB_NAME = os.path.join(BASE_DIR, "database.db")
 
-app = Flask(__name__, static_folder=FRONTEND_DIR, static_url_path="")
+app = Flask(__name__, static_folder=STATIC_DIR, static_url_path="/static")
 CORS(app)
 
 app.config["JWT_SECRET_KEY"] = os.environ.get("JWT_SECRET_KEY", "super-secret-change-this")
@@ -30,6 +31,10 @@ jwt = JWTManager(app)
 
 def now_str():
     return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+
+def today_str():
+    return datetime.now().strftime("%Y-%m-%d")
 
 
 def get_db_connection():
@@ -57,6 +62,87 @@ def parse_json_field(value, default=None):
         return json.loads(value)
     except Exception:
         return default
+
+
+def ensure_column(cursor, table_name, column_name, column_sql):
+    cursor.execute(f"PRAGMA table_info({table_name})")
+    columns = [row["name"] for row in cursor.fetchall()]
+    if column_name not in columns:
+        cursor.execute(f"ALTER TABLE {table_name} ADD COLUMN {column_sql}")
+
+
+def create_notification(user_id, title, message, type_="general"):
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute("""
+            INSERT INTO notifications (user_id, title, message, type, is_read, created_at)
+            VALUES (?, ?, ?, ?, 0, ?)
+        """, (user_id, title, message, type_, now_str()))
+        conn.commit()
+
+
+def process_expired_plans():
+    today = today_str()
+
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+
+        cursor.execute("""
+            SELECT id, username, active_plan, plan_expiry_date
+            FROM users
+            WHERE active_plan IS NOT NULL
+              AND active_plan != ''
+              AND active_plan != 'Free'
+              AND plan_expiry_date IS NOT NULL
+              AND plan_expiry_date < ?
+        """, (today,))
+        expired_users = cursor.fetchall()
+
+        if not expired_users:
+            return
+
+        cursor.execute("SELECT id FROM users WHERE is_admin = 1")
+        admin_rows = cursor.fetchall()
+
+        for user in expired_users:
+            user_message = f"Your {user['active_plan']} plan has expired."
+
+            cursor.execute("""
+                SELECT COUNT(*) AS total
+                FROM notifications
+                WHERE user_id = ? AND title = ? AND message = ?
+            """, (user["id"], "Plan Expired", user_message))
+            already_sent_user = cursor.fetchone()["total"]
+
+            if already_sent_user == 0:
+                cursor.execute("""
+                    INSERT INTO notifications (user_id, title, message, type, is_read, created_at)
+                    VALUES (?, ?, ?, ?, 0, ?)
+                """, (user["id"], "Plan Expired", user_message, "plan", now_str()))
+
+            admin_message = f"{user['username']}'s {user['active_plan']} plan has expired."
+
+            for admin in admin_rows:
+                cursor.execute("""
+                    SELECT COUNT(*) AS total
+                    FROM notifications
+                    WHERE user_id = ? AND title = ? AND message = ?
+                """, (admin["id"], "User Plan Expired", admin_message))
+                already_sent_admin = cursor.fetchone()["total"]
+
+                if already_sent_admin == 0:
+                    cursor.execute("""
+                        INSERT INTO notifications (user_id, title, message, type, is_read, created_at)
+                        VALUES (?, ?, ?, ?, 0, ?)
+                    """, (admin["id"], "User Plan Expired", admin_message, "plan", now_str()))
+
+            cursor.execute("""
+                UPDATE users
+                SET active_plan = 'Free'
+                WHERE id = ?
+            """, (user["id"],))
+
+        conn.commit()
 
 
 def init_db():
@@ -88,8 +174,7 @@ def init_db():
                 created_at TEXT
             )
         """)
-        
-        
+
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS queries (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -114,6 +199,25 @@ def init_db():
                 headers TEXT,
                 body TEXT,
                 created_at TEXT
+            )
+        """)
+
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS pricing_page (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                title TEXT,
+                description TEXT
+            )
+        """)
+
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS pricing_plans (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name TEXT NOT NULL,
+                price REAL NOT NULL,
+                duration_days INTEGER NOT NULL,
+                description TEXT,
+                features TEXT
             )
         """)
 
@@ -143,10 +247,48 @@ def init_db():
             )
         """)
 
-        cursor.execute("PRAGMA table_info(users)")
-        user_columns = [row["name"] for row in cursor.fetchall()]
-        if "active_plan" not in user_columns:
-            cursor.execute("ALTER TABLE users ADD COLUMN active_plan TEXT DEFAULT 'Free'")
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS notifications (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER,
+                title TEXT,
+                message TEXT,
+                type TEXT,
+                is_read INTEGER DEFAULT 0,
+                created_at TEXT
+            )
+        """)
+
+        ensure_column(cursor, "users", "active_plan", "active_plan TEXT DEFAULT 'Free'")
+        ensure_column(cursor, "users", "plan_start_date", "plan_start_date TEXT")
+        ensure_column(cursor, "users", "plan_expiry_date", "plan_expiry_date TEXT")
+
+        ensure_column(cursor, "purchases", "username", "username TEXT")
+        ensure_column(cursor, "purchases", "purchase_date", "purchase_date TEXT")
+        ensure_column(cursor, "purchases", "start_date", "start_date TEXT")
+        ensure_column(cursor, "purchases", "expiry_date", "expiry_date TEXT")
+
+        cursor.execute("SELECT COUNT(*) AS total FROM pricing_page")
+        if cursor.fetchone()["total"] == 0:
+            cursor.execute("""
+                INSERT INTO pricing_page (title, description)
+                VALUES (?, ?)
+            """, (
+                "Simple pricing for every workflow",
+                "Choose a plan that fits your API testing and management needs."
+            ))
+
+        cursor.execute("SELECT COUNT(*) AS total FROM pricing_plans")
+        if cursor.fetchone()["total"] == 0:
+            default_plans = [
+                ("Starter", 199, 30, "Basic testing and collections support.", json.dumps(["API testing", "Collections", "History"])),
+                ("Pro", 499, 30, "Advanced workflow for regular users.", json.dumps(["Everything in Starter", "Priority support", "Better usage limits"])),
+                ("Enterprise", 999, 30, "Full premium workflow for teams.", json.dumps(["Everything in Pro", "Team-ready workflow", "Premium management tools"]))
+            ]
+            cursor.executemany("""
+                INSERT INTO pricing_plans (name, price, duration_days, description, features)
+                VALUES (?, ?, ?, ?, ?)
+            """, default_plans)
 
         conn.commit()
 
@@ -157,9 +299,20 @@ def init_db():
 def serve_root():
     return redirect("/page/home")
 
+
 @app.route("/queries.html")
 def serve_queries_page():
     return send_from_directory(FRONTEND_DIR, "queries.html")
+
+
+@app.route("/pricing.html")
+def serve_pricing_page():
+    return send_from_directory(FRONTEND_DIR, "pricing.html")
+
+
+@app.route("/admin-pricing.html")
+def serve_admin_pricing_page():
+    return send_from_directory(FRONTEND_DIR, "admin-pricing.html")
 
 
 @app.route("/login.html")
@@ -171,6 +324,7 @@ def serve_login_page():
 def faq_page():
     return send_from_directory(FRONTEND_DIR, "faq.html")
 
+
 @app.route("/contact.html")
 def contact_page():
     return send_from_directory(FRONTEND_DIR, "contact.html")
@@ -179,8 +333,6 @@ def contact_page():
 @app.route("/dashboard.html")
 def serve_dashboard_page():
     return send_from_directory(FRONTEND_DIR, "dashboard.html")
-
-
 
 
 @app.route("/settings.html")
@@ -201,6 +353,7 @@ def serve_admin_page():
 @app.route("/users.html")
 def serve_users_page():
     return send_from_directory(FRONTEND_DIR, "users.html")
+
 
 @app.route("/docs.html")
 def serve_docs_page():
@@ -245,6 +398,11 @@ def serve_dynamic_page(slug):
 @app.route("/admin-settings.html")
 def serve_admin_settings_page():
     return send_from_directory(FRONTEND_DIR, "admin-settings.html")
+
+
+@app.route("/notifications.html")
+def serve_notifications_page():
+    return send_from_directory(FRONTEND_DIR, "notifications.html")
 
 
 @app.route("/<path:filename>")
@@ -359,10 +517,12 @@ def login():
 @jwt_required()
 def get_my_subscription():
     try:
+        process_expired_plans()
+
         with get_db_connection() as conn:
             cursor = conn.cursor()
             cursor.execute("""
-                SELECT id, username, email, active_plan
+                SELECT id, username, email, active_plan, plan_start_date, plan_expiry_date
                 FROM users
                 WHERE id = ?
             """, (current_user_id(),))
@@ -376,34 +536,193 @@ def get_my_subscription():
         return jsonify({"error": str(e)}), 500
 
 
+# ---------------- PRICING ---------------- #
+
+@app.route("/api/pricing-page", methods=["GET"])
+def get_pricing_page():
+    try:
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT * FROM pricing_page ORDER BY id DESC LIMIT 1")
+            page = cursor.fetchone()
+
+            cursor.execute("SELECT * FROM pricing_plans ORDER BY price ASC")
+            plans = cursor.fetchall()
+
+        result = {
+            "title": page["title"] if page else "",
+            "description": page["description"] if page else "",
+            "plans": []
+        }
+
+        for plan in plans:
+            result["plans"].append({
+                "id": plan["id"],
+                "name": plan["name"],
+                "price": plan["price"],
+                "duration_days": plan["duration_days"],
+                "description": plan["description"],
+                "features": parse_json_field(plan["features"], [])
+            })
+
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/admin/pricing-page", methods=["GET"])
+@jwt_required()
+def admin_get_pricing_page():
+    if not current_user_is_admin():
+        return jsonify({"error": "Admin access required"}), 403
+
+    try:
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT * FROM pricing_page ORDER BY id DESC LIMIT 1")
+            page = cursor.fetchone()
+
+            cursor.execute("SELECT * FROM pricing_plans ORDER BY id ASC")
+            plans = cursor.fetchall()
+
+        return jsonify({
+            "title": page["title"] if page else "",
+            "description": page["description"] if page else "",
+            "plans": [
+                {
+                    "id": p["id"],
+                    "name": p["name"],
+                    "price": p["price"],
+                    "duration_days": p["duration_days"],
+                    "description": p["description"],
+                    "features": parse_json_field(p["features"], [])
+                }
+                for p in plans
+            ]
+        })
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/admin/pricing-page", methods=["PUT"])
+@jwt_required()
+def admin_update_pricing_page():
+    if not current_user_is_admin():
+        return jsonify({"error": "Admin access required"}), 403
+
+    data = request.get_json() or {}
+    title = data.get("title", "").strip()
+    description = data.get("description", "").strip()
+
+    if not title or not description:
+        return jsonify({"error": "Title and description are required"}), 400
+
+    try:
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT id FROM pricing_page ORDER BY id DESC LIMIT 1")
+            row = cursor.fetchone()
+
+            if row:
+                cursor.execute("""
+                    UPDATE pricing_page
+                    SET title = ?, description = ?
+                    WHERE id = ?
+                """, (title, description, row["id"]))
+            else:
+                cursor.execute("""
+                    INSERT INTO pricing_page (title, description)
+                    VALUES (?, ?)
+                """, (title, description))
+
+            conn.commit()
+
+        return jsonify({"message": "Pricing page updated successfully"})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/admin/pricing-plans/<int:plan_id>", methods=["PUT"])
+@jwt_required()
+def admin_update_pricing_plan(plan_id):
+    if not current_user_is_admin():
+        return jsonify({"error": "Admin access required"}), 403
+
+    data = request.get_json() or {}
+    name = data.get("name", "").strip()
+    price = data.get("price")
+    duration_days = data.get("duration_days")
+    description = data.get("description", "").strip()
+    features = data.get("features", [])
+
+    if not name or price is None or duration_days is None or not description:
+        return jsonify({"error": "All fields are required"}), 400
+
+    try:
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                UPDATE pricing_plans
+                SET name = ?, price = ?, duration_days = ?, description = ?, features = ?
+                WHERE id = ?
+            """, (
+                name,
+                price,
+                duration_days,
+                description,
+                json.dumps(features),
+                plan_id
+            ))
+            conn.commit()
+
+        return jsonify({"message": "Plan updated successfully"})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
 # ---------------- PURCHASES ---------------- #
 
 @app.route("/purchase/checkout", methods=["POST"])
 @jwt_required()
 def create_purchase_checkout():
     data = request.get_json() or {}
-    plan_name = data.get("plan_name", "").strip()
-    amount = data.get("amount", "").strip()
+    plan_id = data.get("plan_id")
 
-    if not plan_name:
-        return jsonify({"error": "Plan name is required"}), 400
+    if not plan_id:
+        return jsonify({"error": "Plan id is required"}), 400
 
     try:
         with get_db_connection() as conn:
             cursor = conn.cursor()
+
+            cursor.execute("SELECT * FROM pricing_plans WHERE id = ?", (plan_id,))
+            plan = cursor.fetchone()
+            if not plan:
+                return jsonify({"error": "Plan not found"}), 404
+
+            cursor.execute("SELECT username FROM users WHERE id = ?", (current_user_id(),))
+            user = cursor.fetchone()
+
+            purchase_reference = f"PAY-{int(time.time())}"
+
             cursor.execute("""
                 INSERT INTO purchases (
-                    user_id, plan_name, amount, status, payment_reference, created_at, updated_at
+                    user_id, username, plan_name, amount, status, payment_reference,
+                    created_at, updated_at, purchase_date, start_date, expiry_date
                 )
-                VALUES (?, ?, ?, ?, ?, ?, ?)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """, (
                 current_user_id(),
-                plan_name,
-                amount,
+                user["username"] if user else "-",
+                plan["name"],
+                str(plan["price"]),
                 "pending",
-                f"PAY-{int(time.time())}",
+                purchase_reference,
                 now_str(),
-                now_str()
+                now_str(),
+                now_str(),
+                None,
+                None
             ))
             purchase_id = cursor.lastrowid
             conn.commit()
@@ -411,8 +730,10 @@ def create_purchase_checkout():
         return jsonify({
             "message": "Checkout created",
             "purchase_id": purchase_id,
-            "plan_name": plan_name,
-            "amount": amount
+            "plan_id": plan["id"],
+            "plan_name": plan["name"],
+            "amount": plan["price"],
+            "duration_days": plan["duration_days"]
         })
     except Exception as e:
         return jsonify({"error": str(e)}), 500
@@ -424,6 +745,7 @@ def confirm_purchase(purchase_id):
     try:
         with get_db_connection() as conn:
             cursor = conn.cursor()
+
             cursor.execute("""
                 SELECT * FROM purchases
                 WHERE id = ? AND user_id = ?
@@ -434,22 +756,40 @@ def confirm_purchase(purchase_id):
                 return jsonify({"error": "Purchase not found"}), 404
 
             cursor.execute("""
+                SELECT * FROM pricing_plans
+                WHERE name = ?
+                LIMIT 1
+            """, (purchase["plan_name"],))
+            plan = cursor.fetchone()
+
+            if not plan:
+                return jsonify({"error": "Pricing plan not found"}), 404
+
+            start_date = datetime.now()
+            expiry_date = start_date + timedelta(days=int(plan["duration_days"]))
+
+            start_str = start_date.strftime("%Y-%m-%d")
+            expiry_str = expiry_date.strftime("%Y-%m-%d")
+
+            cursor.execute("""
                 UPDATE purchases
-                SET status = ?, updated_at = ?
+                SET status = ?, updated_at = ?, start_date = ?, expiry_date = ?, purchase_date = ?
                 WHERE id = ?
-            """, ("paid", now_str(), purchase_id))
+            """, ("paid", now_str(), start_str, expiry_str, now_str(), purchase_id))
 
             cursor.execute("""
                 UPDATE users
-                SET active_plan = ?
+                SET active_plan = ?, plan_start_date = ?, plan_expiry_date = ?
                 WHERE id = ?
-            """, (purchase["plan_name"], current_user_id()))
+            """, (purchase["plan_name"], start_str, expiry_str, current_user_id()))
 
             conn.commit()
 
         return jsonify({
             "message": "Payment confirmed and plan activated",
-            "active_plan": purchase["plan_name"]
+            "active_plan": purchase["plan_name"],
+            "start_date": start_str,
+            "expiry_date": expiry_str
         })
     except Exception as e:
         return jsonify({"error": str(e)}), 500
@@ -459,10 +799,13 @@ def confirm_purchase(purchase_id):
 @jwt_required()
 def get_my_purchases():
     try:
+        process_expired_plans()
+
         with get_db_connection() as conn:
             cursor = conn.cursor()
             cursor.execute("""
-                SELECT id, plan_name, amount, status, payment_reference, created_at, updated_at
+                SELECT id, plan_name, amount, status, payment_reference,
+                       created_at, updated_at, purchase_date, start_date, expiry_date
                 FROM purchases
                 WHERE user_id = ?
                 ORDER BY id DESC
@@ -481,11 +824,15 @@ def admin_get_purchases():
         return jsonify({"error": "Admin access required"}), 403
 
     try:
+        process_expired_plans()
+
         with get_db_connection() as conn:
             cursor = conn.cursor()
             cursor.execute("""
-                SELECT p.id, p.plan_name, p.amount, p.status, p.payment_reference,
-                       p.created_at, p.updated_at, u.username, u.email, u.active_plan
+                SELECT p.id, p.username, p.plan_name, p.amount, p.status,
+                       p.payment_reference, p.created_at, p.updated_at,
+                       p.purchase_date, p.start_date, p.expiry_date,
+                       u.email, u.active_plan
                 FROM purchases p
                 LEFT JOIN users u ON p.user_id = u.id
                 ORDER BY p.id DESC
@@ -932,10 +1279,13 @@ def get_users():
         return jsonify({"error": "Admin access required"}), 403
 
     try:
+        process_expired_plans()
+
         with get_db_connection() as conn:
             cursor = conn.cursor()
             cursor.execute("""
-                SELECT id, username, email, is_admin, created_at, active_plan
+                SELECT id, username, email, is_admin, created_at,
+                       active_plan, plan_start_date, plan_expiry_date
                 FROM users
                 ORDER BY id DESC
             """)
@@ -987,6 +1337,8 @@ def delete_user(user_id):
     try:
         with get_db_connection() as conn:
             cursor = conn.cursor()
+            cursor.execute("DELETE FROM notifications WHERE user_id = ?", (user_id,))
+            cursor.execute("DELETE FROM queries WHERE user_id = ?", (user_id,))
             cursor.execute("DELETE FROM collections WHERE user_id = ?", (user_id,))
             cursor.execute("DELETE FROM history WHERE user_id = ?", (user_id,))
             cursor.execute("DELETE FROM purchases WHERE user_id = ?", (user_id,))
@@ -1099,6 +1451,8 @@ def dashboard_stats():
         return jsonify({"error": "Admin access required"}), 403
 
     try:
+        process_expired_plans()
+
         with get_db_connection() as conn:
             cursor = conn.cursor()
 
@@ -1129,8 +1483,10 @@ def dashboard_stats():
         })
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-    
-    
+
+
+# ---------------- PROFILE ---------------- #
+
 @app.route("/me/profile", methods=["PUT"])
 @jwt_required()
 def update_my_profile():
@@ -1193,7 +1549,10 @@ def update_my_password():
         return jsonify({"message": "Password changed successfully"})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-    
+
+
+# ---------------- SUPPORT / QUERIES ---------------- #
+
 @app.route("/support", methods=["POST"])
 def create_support():
     data = request.get_json() or {}
@@ -1205,7 +1564,6 @@ def create_support():
         return jsonify({"error": "All fields required"}), 400
 
     return jsonify({"message": "Support request sent successfully"})
-
 
 
 @app.route("/support/query", methods=["POST"])
@@ -1290,6 +1648,47 @@ def admin_solve_query(query_id):
             conn.commit()
 
         return jsonify({"message": "Query marked as solved"})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+# ---------------- NOTIFICATIONS ---------------- #
+
+@app.route("/notifications", methods=["GET"])
+@jwt_required()
+def get_notifications():
+    try:
+        process_expired_plans()
+
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                SELECT *
+                FROM notifications
+                WHERE user_id = ?
+                ORDER BY id DESC
+            """, (current_user_id(),))
+            rows = cursor.fetchall()
+
+        return jsonify([dict(row) for row in rows])
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/notifications/<int:notification_id>/read", methods=["PUT"])
+@jwt_required()
+def mark_notification_read(notification_id):
+    try:
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                UPDATE notifications
+                SET is_read = 1
+                WHERE id = ? AND user_id = ?
+            """, (notification_id, current_user_id()))
+            conn.commit()
+
+        return jsonify({"message": "Notification marked as read"})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 

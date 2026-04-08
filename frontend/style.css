@@ -1196,3 +1196,13 @@ canvas {
     color: #ffffff;
     transform: translateY(-2px);
 }
+
+#adminPlansContainer .card {
+    border: 1px solid var(--border);
+}
+
+#notificationsList .overview-item {
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 18px;
+}

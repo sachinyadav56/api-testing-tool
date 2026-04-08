@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pricing Management - API Tool</title>
+    <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<div class="admin-page-wrapper">
+    <div class="admin-container">
+        <div class="page-topbar">
+            <div>
+                <h1>Pricing Page Management</h1>
+                <p>Manage pricing title, description and plans</p>
+            </div>
+
+            <div class="topbar-actions">
+                <button id="themeToggle" class="theme-btn">☀ Light</button>
+                <a href="/admin.html" class="back-btn">← Admin</a>
+            </div>
+        </div>
+
+        <section class="card">
+            <h2>Pricing Page Content</h2>
+
+            <label>Title</label>
+            <input type="text" id="pricingPageTitle">
+
+            <label>Description</label>
+            <textarea id="pricingPageDescription"></textarea>
+
+            <div class="button-group" style="margin-top:16px;">
+                <button id="savePricingPageBtn">Save Pricing Page</button>
+            </div>
+        </section>
+
+        <section class="card">
+            <h2>Plans</h2>
+            <div id="adminPlansContainer"></div>
+        </section>
+    </div>
+</div>
+
+<script src="/theme.js"></script>
+<script src="/admin-pricing.js"></script>
+</body>
+</html>
