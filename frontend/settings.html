@@ -12,34 +12,16 @@
 
         <div class="page-topbar">
             <div>
-                <h1>Profile & Settings</h1>
-                <p>Manage your account information and password</p>
+                <h1>Settings</h1>
+                <p>Manage your profile and password</p>
             </div>
 
-            <div class="topbar-actions">
-                <button id="themeToggle" class="theme-btn">☀ Light</button>
-                <a href="/dashboard.html" class="back-btn">← Dashboard</a>
+            <div class="topbar-links">
+                <a href="#" id="themeToggle">🌙 Dark</a>
+                <a href="#" id="backLink">Back</a>
+                
             </div>
         </div>
-
-        <section class="stats-grid">
-            <div class="stat-box">
-                <h3>Username</h3>
-                <p id="profileUsername">-</p>
-            </div>
-            <div class="stat-box">
-                <h3>Email</h3>
-                <p id="profileEmail">-</p>
-            </div>
-            <div class="stat-box">
-                <h3>Current Plan</h3>
-                <p id="profilePlan">Free</p>
-            </div>
-            <div class="stat-box">
-                <h3>Account Type</h3>
-                <p id="profileRole">User</p>
-            </div>
-        </section>
 
         <div class="main-grid">
             <section class="card">
@@ -75,6 +57,166 @@
 </div>
 
 <script src="/theme.js"></script>
-<script src="/settings.js"></script>
+
+<script>
+const API_BASE = window.location.origin;
+const token = localStorage.getItem("token");
+const loggedInUser = JSON.parse(localStorage.getItem("loggedInUser"));
+
+if (!token || !loggedInUser) {
+    window.location.href = "/login.html";
+}
+
+function authHeaders() {
+    return {
+        "Authorization": `Bearer ${token}`
+    };
+}
+
+function authJsonHeaders() {
+    return {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`
+    };
+}
+
+function ensureToastContainer() {
+    let container = document.getElementById("toastContainer");
+    if (!container) {
+        container = document.createElement("div");
+        container.id = "toastContainer";
+        container.className = "toast-container";
+        document.body.appendChild(container);
+    }
+    return container;
+}
+
+function showToast(message, type = "success") {
+    const container = ensureToastContainer();
+    const toast = document.createElement("div");
+    toast.className = `toast toast-${type}`;
+    toast.innerHTML = `
+        <span class="toast-icon">${type === "success" ? "✓" : "✕"}</span>
+        <span class="toast-text">${message}</span>
+        <button class="toast-close" type="button">&times;</button>
+    `;
+
+    toast.querySelector(".toast-close").addEventListener("click", () => {
+        toast.classList.remove("show");
+        setTimeout(() => toast.remove(), 250);
+    });
+
+    container.appendChild(toast);
+    requestAnimationFrame(() => toast.classList.add("show"));
+
+    setTimeout(() => {
+        toast.classList.remove("show");
+        setTimeout(() => toast.remove(), 250);
+    }, 3000);
+}
+
+async function loadProfile() {
+    try {
+        const response = await fetch(`${API_BASE}/me/subscription`, {
+            headers: authHeaders()
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            showToast(data.error || "Failed to load profile", "error");
+            return;
+        }
+
+        document.getElementById("settingsUsername").value = data.username || "";
+        document.getElementById("settingsEmail").value = data.email || "";
+    } catch (error) {
+        showToast("Failed to load profile", "error");
+    }
+}
+
+async function saveProfile() {
+    const username = document.getElementById("settingsUsername").value.trim();
+    const email = document.getElementById("settingsEmail").value.trim();
+
+    if (!username || !email) {
+        showToast("Please fill all fields", "error");
+        return;
+    }
+
+    try {
+        const response = await fetch(`${API_BASE}/me/profile`, {
+            method: "PUT",
+            headers: authJsonHeaders(),
+            body: JSON.stringify({ username, email })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            showToast(data.error || "Failed to update profile", "error");
+            return;
+        }
+
+        localStorage.setItem("loggedInUser", JSON.stringify({
+            ...loggedInUser,
+            username,
+            email
+        }));
+
+        showToast(data.message || "Profile updated successfully", "success");
+    } catch (error) {
+        showToast("Failed to update profile", "error");
+    }
+}
+
+async function changePassword() {
+    const current_password = document.getElementById("currentPassword").value.trim();
+    const new_password = document.getElementById("newPassword").value.trim();
+
+    if (!current_password || !new_password) {
+        showToast("Please fill all password fields", "error");
+        return;
+    }
+
+    try {
+        const response = await fetch(`${API_BASE}/me/password`, {
+            method: "PUT",
+            headers: authJsonHeaders(),
+            body: JSON.stringify({ current_password, new_password })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            showToast(data.error || "Failed to change password", "error");
+            return;
+        }
+
+        document.getElementById("currentPassword").value = "";
+        document.getElementById("newPassword").value = "";
+        showToast(data.message || "Password changed successfully", "success");
+    } catch (error) {
+        showToast("Failed to change password", "error");
+    }
+}
+
+window.addEventListener("DOMContentLoaded", () => {
+    const backLink = document.getElementById("backLink");
+    backLink.href = loggedInUser.is_admin ? "/admin.html" : "/dashboard.html";
+    backLink.textContent = loggedInUser.is_admin ? "Admin Dashboard" : "User Dashboard";
+
+    loadProfile();
+
+    document.getElementById("saveProfileBtn").addEventListener("click", saveProfile);
+    document.getElementById("changePasswordBtn").addEventListener("click", changePassword);
+
+    document.getElementById("logoutBtn").addEventListener("click", (e) => {
+        e.preventDefault();
+        localStorage.clear();
+        window.location.href = "/login.html";
+    });
+});
+</script>
 </body>
 </html>

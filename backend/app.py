@@ -51,6 +51,18 @@ def current_user_is_admin():
     return bool(get_jwt().get("is_admin"))
 
 
+def current_admin_role():
+    return (get_jwt().get("admin_role") or "").strip()
+
+
+def require_admin_roles(*roles):
+    if not current_user_is_admin():
+        return jsonify({"error": "Admin access required"}), 403
+    if current_admin_role() not in roles:
+        return jsonify({"error": "Permission denied"}), 403
+    return None
+
+
 def parse_json_field(value, default=None):
     if default is None:
         default = {}
@@ -262,6 +274,7 @@ def init_db():
         ensure_column(cursor, "users", "active_plan", "active_plan TEXT DEFAULT 'Free'")
         ensure_column(cursor, "users", "plan_start_date", "plan_start_date TEXT")
         ensure_column(cursor, "users", "plan_expiry_date", "plan_expiry_date TEXT")
+        ensure_column(cursor, "users", "admin_role", "admin_role TEXT DEFAULT ''")
 
         ensure_column(cursor, "purchases", "username", "username TEXT")
         ensure_column(cursor, "purchases", "purchase_date", "purchase_date TEXT")
@@ -405,14 +418,6 @@ def serve_notifications_page():
     return send_from_directory(FRONTEND_DIR, "notifications.html")
 
 
-@app.route("/<path:filename>")
-def serve_static_file(filename):
-    file_path = os.path.join(FRONTEND_DIR, filename)
-    if os.path.isfile(file_path):
-        return send_from_directory(FRONTEND_DIR, filename)
-    return jsonify({"error": "File not found"}), 404
-
-
 # ---------------- AUTH ---------------- #
 
 @app.route("/register", methods=["POST"])
@@ -437,16 +442,18 @@ def register():
             cursor.execute("SELECT COUNT(*) AS total FROM users")
             total_users = cursor.fetchone()["total"]
             is_admin = 1 if total_users == 0 else 0
+            admin_role = "super_admin" if is_admin else ""
 
             cursor.execute("""
-                INSERT INTO users (username, email, password, is_admin, created_at, active_plan)
-                VALUES (?, ?, ?, ?, ?, ?)
-            """, (username, email, hashed_password, is_admin, now_str(), "Free"))
+                INSERT INTO users (username, email, password, is_admin, created_at, active_plan, admin_role)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+            """, (username, email, hashed_password, is_admin, now_str(), "Free", admin_role))
             conn.commit()
 
         return jsonify({
             "message": "User registered successfully",
-            "is_admin": bool(is_admin)
+            "is_admin": bool(is_admin),
+            "admin_role": admin_role
         }), 201
 
     except sqlite3.IntegrityError:
@@ -493,6 +500,7 @@ def login():
                 "username": user["username"],
                 "email": user["email"],
                 "is_admin": bool(user["is_admin"]),
+                "admin_role": user["admin_role"] if "admin_role" in user.keys() else "",
             }
         )
 
@@ -504,6 +512,7 @@ def login():
                 "username": user["username"],
                 "email": user["email"],
                 "is_admin": bool(user["is_admin"]),
+                "admin_role": user["admin_role"] if "admin_role" in user.keys() else "",
                 "active_plan": user["active_plan"] if "active_plan" in user.keys() else "Free"
             }
         })
@@ -573,8 +582,9 @@ def get_pricing_page():
 @app.route("/admin/pricing-page", methods=["GET"])
 @jwt_required()
 def admin_get_pricing_page():
-    if not current_user_is_admin():
-        return jsonify({"error": "Admin access required"}), 403
+    role_error = require_admin_roles("super_admin", "pricing_admin")
+    if role_error:
+        return role_error
 
     try:
         with get_db_connection() as conn:
@@ -607,8 +617,9 @@ def admin_get_pricing_page():
 @app.route("/admin/pricing-page", methods=["PUT"])
 @jwt_required()
 def admin_update_pricing_page():
-    if not current_user_is_admin():
-        return jsonify({"error": "Admin access required"}), 403
+    role_error = require_admin_roles("super_admin", "pricing_admin")
+    if role_error:
+        return role_error
 
     data = request.get_json() or {}
     title = data.get("title", "").strip()
@@ -645,8 +656,9 @@ def admin_update_pricing_page():
 @app.route("/admin/pricing-plans/<int:plan_id>", methods=["PUT"])
 @jwt_required()
 def admin_update_pricing_plan(plan_id):
-    if not current_user_is_admin():
-        return jsonify({"error": "Admin access required"}), 403
+    role_error = require_admin_roles("super_admin", "pricing_admin")
+    if role_error:
+        return role_error
 
     data = request.get_json() or {}
     name = data.get("name", "").strip()
@@ -820,8 +832,9 @@ def get_my_purchases():
 @app.route("/admin/purchases", methods=["GET"])
 @jwt_required()
 def admin_get_purchases():
-    if not current_user_is_admin():
-        return jsonify({"error": "Admin access required"}), 403
+    role_error = require_admin_roles("super_admin", "pricing_admin")
+    if role_error:
+        return role_error
 
     try:
         process_expired_plans()
@@ -829,7 +842,7 @@ def admin_get_purchases():
         with get_db_connection() as conn:
             cursor = conn.cursor()
             cursor.execute("""
-                SELECT p.id, p.username, p.plan_name, p.amount, p.status,
+                SELECT p.id, p.user_id, p.username, p.plan_name, p.amount, p.status,
                        p.payment_reference, p.created_at, p.updated_at,
                        p.purchase_date, p.start_date, p.expiry_date,
                        u.email, u.active_plan
@@ -840,6 +853,45 @@ def admin_get_purchases():
             rows = cursor.fetchall()
 
         return jsonify([dict(row) for row in rows])
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/admin/purchases/remove/<int:purchase_id>", methods=["DELETE"])
+@jwt_required()
+def admin_remove_expired_purchase(purchase_id):
+    role_error = require_admin_roles("super_admin", "pricing_admin")
+    if role_error:
+        return role_error
+
+    try:
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
+
+            cursor.execute("SELECT * FROM purchases WHERE id = ?", (purchase_id,))
+            purchase = cursor.fetchone()
+
+            if not purchase:
+                return jsonify({"error": "Purchase not found"}), 404
+
+            if not purchase["expiry_date"]:
+                return jsonify({"error": "This purchase has no expiry date"}), 400
+
+            if purchase["expiry_date"] >= datetime.now().strftime("%Y-%m-%d"):
+                return jsonify({"error": "Only expired plans can be removed"}), 400
+
+            cursor.execute("""
+                UPDATE users
+                SET active_plan = 'Free',
+                    plan_start_date = NULL,
+                    plan_expiry_date = NULL
+                WHERE id = ?
+            """, (purchase["user_id"],))
+
+            cursor.execute("DELETE FROM purchases WHERE id = ?", (purchase_id,))
+            conn.commit()
+
+        return jsonify({"message": "Expired plan removed successfully"})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
@@ -1142,8 +1194,9 @@ def import_collections():
 @app.route("/cms/pages", methods=["GET"])
 @jwt_required()
 def get_pages():
-    if not current_user_is_admin():
-        return jsonify({"error": "Admin access required"}), 403
+    role_error = require_admin_roles("super_admin", "cms_admin")
+    if role_error:
+        return role_error
 
     try:
         with get_db_connection() as conn:
@@ -1158,8 +1211,9 @@ def get_pages():
 @app.route("/cms/pages", methods=["POST"])
 @jwt_required()
 def create_page():
-    if not current_user_is_admin():
-        return jsonify({"error": "Admin access required"}), 403
+    role_error = require_admin_roles("super_admin", "cms_admin")
+    if role_error:
+        return role_error
 
     data = request.get_json() or {}
     title = data.get("title", "").strip()
@@ -1201,8 +1255,9 @@ def create_page():
 @app.route("/cms/pages/<int:page_id>", methods=["PUT"])
 @jwt_required()
 def update_page(page_id):
-    if not current_user_is_admin():
-        return jsonify({"error": "Admin access required"}), 403
+    role_error = require_admin_roles("super_admin", "cms_admin")
+    if role_error:
+        return role_error
 
     data = request.get_json() or {}
     title = data.get("title", "").strip()
@@ -1237,8 +1292,9 @@ def update_page(page_id):
 @app.route("/cms/pages/<int:page_id>", methods=["DELETE"])
 @jwt_required()
 def delete_page(page_id):
-    if not current_user_is_admin():
-        return jsonify({"error": "Admin access required"}), 403
+    role_error = require_admin_roles("super_admin", "cms_admin")
+    if role_error:
+        return role_error
 
     try:
         with get_db_connection() as conn:
@@ -1275,8 +1331,9 @@ def get_public_page_data(slug):
 @app.route("/users", methods=["GET"])
 @jwt_required()
 def get_users():
-    if not current_user_is_admin():
-        return jsonify({"error": "Admin access required"}), 403
+    role_error = require_admin_roles("super_admin")
+    if role_error:
+        return role_error
 
     try:
         process_expired_plans()
@@ -1284,7 +1341,7 @@ def get_users():
         with get_db_connection() as conn:
             cursor = conn.cursor()
             cursor.execute("""
-                SELECT id, username, email, is_admin, created_at,
+                SELECT id, username, email, is_admin, admin_role, created_at,
                        active_plan, plan_start_date, plan_expiry_date
                 FROM users
                 ORDER BY id DESC
@@ -1298,25 +1355,36 @@ def get_users():
 @app.route("/users/<int:user_id>", methods=["PUT"])
 @jwt_required()
 def update_user(user_id):
-    if not current_user_is_admin():
-        return jsonify({"error": "Admin access required"}), 403
+    role_error = require_admin_roles("super_admin")
+    if role_error:
+        return role_error
 
     data = request.get_json() or {}
     username = data.get("username", "").strip()
     email = data.get("email", "").strip().lower()
-    is_admin = 1 if data.get("is_admin") else 0
+    admin_role = data.get("admin_role", "").strip()
+
+    allowed_roles = ["", "cms_admin", "pricing_admin", "support_admin", "super_admin"]
+    if admin_role not in allowed_roles:
+        return jsonify({"error": "Invalid admin role"}), 400
 
     if not username or not email:
         return jsonify({"error": "Username and email are required"}), 400
 
+    is_admin = 1 if admin_role else 0
+
     try:
         with get_db_connection() as conn:
             cursor = conn.cursor()
+
+            if current_user_id() == user_id and admin_role == "":
+                return jsonify({"error": "Super admin cannot remove own admin role"}), 400
+
             cursor.execute("""
                 UPDATE users
-                SET username = ?, email = ?, is_admin = ?
+                SET username = ?, email = ?, is_admin = ?, admin_role = ?
                 WHERE id = ?
-            """, (username, email, is_admin, user_id))
+            """, (username, email, is_admin, admin_role, user_id))
             conn.commit()
         return jsonify({"message": "User updated successfully"})
     except sqlite3.IntegrityError:
@@ -1328,8 +1396,9 @@ def update_user(user_id):
 @app.route("/users/<int:user_id>", methods=["DELETE"])
 @jwt_required()
 def delete_user(user_id):
-    if not current_user_is_admin():
-        return jsonify({"error": "Admin access required"}), 403
+    role_error = require_admin_roles("super_admin")
+    if role_error:
+        return role_error
 
     if current_user_id() == user_id:
         return jsonify({"error": "Admin cannot delete own account"}), 400
@@ -1355,8 +1424,9 @@ def delete_user(user_id):
 @app.route("/admin/history", methods=["GET"])
 @jwt_required()
 def admin_get_history():
-    if not current_user_is_admin():
-        return jsonify({"error": "Admin access required"}), 403
+    role_error = require_admin_roles("super_admin")
+    if role_error:
+        return role_error
 
     try:
         with get_db_connection() as conn:
@@ -1376,8 +1446,9 @@ def admin_get_history():
 @app.route("/admin/history/delete", methods=["POST"])
 @jwt_required()
 def admin_delete_history():
-    if not current_user_is_admin():
-        return jsonify({"error": "Admin access required"}), 403
+    role_error = require_admin_roles("super_admin")
+    if role_error:
+        return role_error
 
     data = request.get_json() or {}
     ids = data.get("ids", [])
@@ -1401,8 +1472,9 @@ def admin_delete_history():
 @app.route("/admin/collections", methods=["GET"])
 @jwt_required()
 def admin_get_collections():
-    if not current_user_is_admin():
-        return jsonify({"error": "Admin access required"}), 403
+    role_error = require_admin_roles("super_admin")
+    if role_error:
+        return role_error
 
     try:
         with get_db_connection() as conn:
@@ -1422,8 +1494,9 @@ def admin_get_collections():
 @app.route("/admin/collections/delete", methods=["POST"])
 @jwt_required()
 def admin_delete_collections():
-    if not current_user_is_admin():
-        return jsonify({"error": "Admin access required"}), 403
+    role_error = require_admin_roles("super_admin")
+    if role_error:
+        return role_error
 
     data = request.get_json() or {}
     ids = data.get("ids", [])
@@ -1447,8 +1520,9 @@ def admin_delete_collections():
 @app.route("/dashboard/stats", methods=["GET"])
 @jwt_required()
 def dashboard_stats():
-    if not current_user_is_admin():
-        return jsonify({"error": "Admin access required"}), 403
+    role_error = require_admin_roles("super_admin")
+    if role_error:
+        return role_error
 
     try:
         process_expired_plans()
@@ -1613,8 +1687,9 @@ def create_query():
 @app.route("/admin/queries", methods=["GET"])
 @jwt_required()
 def admin_get_queries():
-    if not current_user_is_admin():
-        return jsonify({"error": "Admin access required"}), 403
+    role_error = require_admin_roles("super_admin", "support_admin")
+    if role_error:
+        return role_error
 
     try:
         with get_db_connection() as conn:
@@ -1634,8 +1709,9 @@ def admin_get_queries():
 @app.route("/admin/queries/<int:query_id>/solve", methods=["PUT"])
 @jwt_required()
 def admin_solve_query(query_id):
-    if not current_user_is_admin():
-        return jsonify({"error": "Admin access required"}), 403
+    role_error = require_admin_roles("super_admin", "support_admin")
+    if role_error:
+        return role_error
 
     try:
         with get_db_connection() as conn:
@@ -1691,6 +1767,61 @@ def mark_notification_read(notification_id):
         return jsonify({"message": "Notification marked as read"})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+
+@app.route("/notifications/unread-count", methods=["GET"])
+@jwt_required()
+def get_unread_notification_count():
+    try:
+        process_expired_plans()
+
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                SELECT COUNT(*) AS total
+                FROM notifications
+                WHERE user_id = ? AND is_read = 0
+            """, (current_user_id(),))
+            row = cursor.fetchone()
+
+        return jsonify({
+            "unread_count": row["total"] if row else 0
+        })
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/test-notification", methods=["POST"])
+@jwt_required()
+def test_notification():
+    try:
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                INSERT INTO notifications (user_id, title, message, type, is_read, created_at)
+                VALUES (?, ?, ?, ?, 0, ?)
+            """, (
+                current_user_id(),
+                "Test Notification",
+                "This is a test unread notification.",
+                "general",
+                now_str()
+            ))
+            conn.commit()
+
+        return jsonify({"message": "Test notification created"})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+# ---------------- FALLBACK STATIC ROUTE ---------------- #
+
+@app.route("/<path:filename>")
+def serve_static_file(filename):
+    file_path = os.path.join(FRONTEND_DIR, filename)
+    if os.path.isfile(file_path):
+        return send_from_directory(FRONTEND_DIR, filename)
+    return jsonify({"error": "File not found"}), 404
 
 
 if __name__ == "__main__":

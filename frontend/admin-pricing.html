@@ -3,46 +3,273 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pricing Management - API Tool</title>
+    <title>Admin Pricing - API Tool</title>
     <link rel="stylesheet" href="/style.css">
 </head>
 <body>
 <div class="admin-page-wrapper">
     <div class="admin-container">
+
         <div class="page-topbar">
             <div>
-                <h1>Pricing Page Management</h1>
-                <p>Manage pricing title, description and plans</p>
+                <h1>Pricing Management</h1>
+                <p>Manage pricing page content and plans</p>
             </div>
 
-            <div class="topbar-actions">
-                <button id="themeToggle" class="theme-btn">☀ Light</button>
-                <a href="/admin.html" class="back-btn">← Admin</a>
+            <div class="topbar-links">
+                <a href="#" id="themeToggle">🌙 Dark</a>
+                <a href="/admin.html">Admin</a>
+                <a href="/purchases.html">Purchases</a>
+                <a href="/notifications.html">Notifications</a>
+                <a href="#" id="logoutBtn" class="logout-link">Logout</a>
             </div>
         </div>
 
         <section class="card">
             <h2>Pricing Page Content</h2>
 
-            <label>Title</label>
-            <input type="text" id="pricingPageTitle">
+            <label for="pricingTitle">Title</label>
+            <input type="text" id="pricingTitle" placeholder="Enter pricing page title">
 
-            <label>Description</label>
-            <textarea id="pricingPageDescription"></textarea>
+            <label for="pricingDescription">Description</label>
+            <textarea id="pricingDescription" placeholder="Enter pricing page description"></textarea>
 
             <div class="button-group" style="margin-top:16px;">
-                <button id="savePricingPageBtn">Save Pricing Page</button>
+                <button id="savePageBtn" type="button">Save Pricing Page</button>
             </div>
         </section>
 
         <section class="card">
             <h2>Plans</h2>
-            <div id="adminPlansContainer"></div>
+            <div id="plansContainer">
+                <p>Loading plans...</p>
+            </div>
         </section>
+
     </div>
 </div>
 
 <script src="/theme.js"></script>
-<script src="/admin-pricing.js"></script>
+
+<script>
+const API_BASE = window.location.origin;
+const token = localStorage.getItem("token");
+const loggedInUser = JSON.parse(localStorage.getItem("loggedInUser"));
+
+if (!token || !loggedInUser) {
+    window.location.href = "/login.html";
+}
+
+if (!loggedInUser.is_admin) {
+    window.location.href = "/dashboard.html";
+}
+
+function authHeaders() {
+    return {
+        "Authorization": `Bearer ${token}`
+    };
+}
+
+function authJsonHeaders() {
+    return {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`
+    };
+}
+
+function ensureToastContainer() {
+    let container = document.getElementById("toastContainer");
+    if (!container) {
+        container = document.createElement("div");
+        container.id = "toastContainer";
+        container.className = "toast-container";
+        document.body.appendChild(container);
+    }
+    return container;
+}
+
+function showToast(message, type = "success") {
+    const container = ensureToastContainer();
+    const toast = document.createElement("div");
+    toast.className = `toast toast-${type}`;
+    toast.innerHTML = `
+        <span class="toast-icon">${type === "success" ? "✓" : "✕"}</span>
+        <span class="toast-text">${message}</span>
+        <button class="toast-close" type="button">&times;</button>
+    `;
+
+    toast.querySelector(".toast-close").addEventListener("click", () => {
+        toast.classList.remove("show");
+        setTimeout(() => toast.remove(), 250);
+    });
+
+    container.appendChild(toast);
+    requestAnimationFrame(() => toast.classList.add("show"));
+
+    setTimeout(() => {
+        toast.classList.remove("show");
+        setTimeout(() => toast.remove(), 250);
+    }, 3000);
+}
+
+function escapeHtml(value) {
+    return String(value || "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+}
+
+async function loadPricingPage() {
+    try {
+        const response = await fetch(`${API_BASE}/admin/pricing-page`, {
+            headers: authHeaders()
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            showToast(data.error || "Failed to load pricing page", "error");
+            return;
+        }
+
+        document.getElementById("pricingTitle").value = data.title || "";
+        document.getElementById("pricingDescription").value = data.description || "";
+
+        renderPlans(data.plans || []);
+    } catch (error) {
+        showToast("Failed to load pricing page", "error");
+    }
+}
+
+function renderPlans(plans) {
+    const container = document.getElementById("plansContainer");
+    container.innerHTML = "";
+
+    if (!plans.length) {
+        container.innerHTML = "<p>No plans found.</p>";
+        return;
+    }
+
+    plans.forEach(plan => {
+        const card = document.createElement("div");
+        card.className = "card";
+        card.style.marginTop = "16px";
+
+        card.innerHTML = `
+            <label>Name</label>
+            <input type="text" class="plan-name" value="${escapeHtml(plan.name)}">
+
+            <label>Price</label>
+            <input type="number" class="plan-price" value="${escapeHtml(plan.price)}">
+
+            <label>Duration Days</label>
+            <input type="number" class="plan-duration" value="${escapeHtml(plan.duration_days)}">
+
+            <label>Description</label>
+            <textarea class="plan-description">${escapeHtml(plan.description)}</textarea>
+
+            <label>Features (comma separated)</label>
+            <input type="text" class="plan-features" value="${escapeHtml((plan.features || []).join(", "))}">
+
+            <div class="button-group" style="margin-top:16px;">
+                <button type="button" class="save-plan-btn" data-id="${plan.id}">
+                    Save ${escapeHtml(plan.name)}
+                </button>
+            </div>
+        `;
+
+        container.appendChild(card);
+    });
+
+    document.querySelectorAll(".save-plan-btn").forEach(btn => {
+        btn.addEventListener("click", async () => {
+            const card = btn.closest(".card");
+            const planId = btn.dataset.id;
+
+            const payload = {
+                name: card.querySelector(".plan-name").value.trim(),
+                price: Number(card.querySelector(".plan-price").value),
+                duration_days: Number(card.querySelector(".plan-duration").value),
+                description: card.querySelector(".plan-description").value.trim(),
+                features: card.querySelector(".plan-features").value
+                    .split(",")
+                    .map(v => v.trim())
+                    .filter(Boolean)
+            };
+
+            if (!payload.name || !payload.description || !payload.price || !payload.duration_days) {
+                showToast("Please fill all plan fields", "error");
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE}/admin/pricing-plans/${planId}`, {
+                    method: "PUT",
+                    headers: authJsonHeaders(),
+                    body: JSON.stringify(payload)
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    showToast(data.error || "Failed to update plan", "error");
+                    return;
+                }
+
+                showToast(data.message || "Plan updated successfully", "success");
+                loadPricingPage();
+            } catch (error) {
+                showToast("Failed to update plan", "error");
+            }
+        });
+    });
+}
+
+async function savePricingPage() {
+    const title = document.getElementById("pricingTitle").value.trim();
+    const description = document.getElementById("pricingDescription").value.trim();
+
+    if (!title || !description) {
+        showToast("Title and description are required", "error");
+        return;
+    }
+
+    try {
+        const response = await fetch(`${API_BASE}/admin/pricing-page`, {
+            method: "PUT",
+            headers: authJsonHeaders(),
+            body: JSON.stringify({ title, description })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            showToast(data.error || "Failed to update pricing page", "error");
+            return;
+        }
+
+        showToast(data.message || "Pricing page updated successfully", "success");
+    } catch (error) {
+        showToast("Failed to update pricing page", "error");
+    }
+}
+
+window.addEventListener("DOMContentLoaded", () => {
+    loadPricingPage();
+
+    document.getElementById("savePageBtn").addEventListener("click", savePricingPage);
+
+    const logoutBtn = document.getElementById("logoutBtn");
+    if (logoutBtn) {
+        logoutBtn.addEventListener("click", (e) => {
+            e.preventDefault();
+            localStorage.clear();
+            window.location.href = "/login.html";
+        });
+    }
+});
+</script>
 </body>
 </html>

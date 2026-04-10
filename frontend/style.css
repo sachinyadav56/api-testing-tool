@@ -1206,3 +1206,52 @@ canvas {
     border-radius: 16px;
     padding: 18px;
 }
+
+.topbar-links {
+    display: flex;
+    align-items: center;
+    gap: 22px;
+    flex-wrap: wrap;
+}
+
+.topbar-links a {
+    text-decoration: none;
+    color: var(--text);
+    font-weight: 500;
+    transition: 0.2s ease;
+}
+
+.topbar-links a:hover {
+    color: var(--primary);
+}
+
+.nav-notification-link {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.notification-badge {
+    min-width: 20px;
+    height: 20px;
+    padding: 0 6px;
+    border-radius: 999px;
+    background: #ef4444;
+    color: #fff;
+    font-size: 12px;
+    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+}
+
+.logout-link {
+    color: #ef4444;
+    font-weight: 600;
+}
+
+.logout-link:hover {
+    color: #dc2626;
+}

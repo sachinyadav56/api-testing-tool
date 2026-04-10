@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Purchases Management - API Tool</title>
+    <title>Purchase Management - API Tool</title>
     <link rel="stylesheet" href="/style.css">
 </head>
 <body>
@@ -12,60 +12,37 @@
 
         <div class="page-topbar">
             <div>
-                <h1>Purchases Management</h1>
-                <p>Real premium purchases from users</p>
+                <h1>Purchase Management</h1>
+                <p>View plan purchases and remove expired plans</p>
             </div>
 
-            <div class="topbar-actions">
-                <button id="themeToggle" class="theme-btn">☀ Light</button>
-                <a href="/admin.html" class="back-btn">← Admin Panel</a>
-                <button id="logoutBtn" class="danger-btn">Logout</button>
+            <div class="topbar-links">
+                <a href="#" id="themeToggle">🌙 Dark</a>
+                <a href="/admin.html">Admin</a>
+                <a href="/notifications.html">Notifications</a>
+                <a href="#" id="logoutBtn" class="logout-link">Logout</a>
             </div>
         </div>
 
-        <section class="stats-grid">
-            <div class="stat-box">
-                <h3>Starter Buyers</h3>
-                <p id="starterCount">0</p>
-            </div>
-
-            <div class="stat-box">
-                <h3>Pro Buyers</h3>
-                <p id="proCount">0</p>
-            </div>
-
-            <div class="stat-box">
-                <h3>Enterprise Buyers</h3>
-                <p id="enterpriseCount">0</p>
-            </div>
-
-            <div class="stat-box">
-                <h3>Total Revenue</h3>
-                <p id="revenueCount">$0</p>
-            </div>
-        </section>
-
         <section class="card">
-            <div class="section-head">
-                <h2>Purchased Plans</h2>
-            </div>
-
             <div class="table-wrapper">
                 <table class="admin-table">
                     <thead>
                         <tr>
+                            <th>ID</th>
                             <th>User</th>
                             <th>Email</th>
                             <th>Plan</th>
                             <th>Amount</th>
                             <th>Status</th>
-                            <th>Date</th>
-                            <th>Active Plan</th>
+                            <th>Start Date</th>
+                            <th>Expiry Date</th>
+                            <th>Action</th>
                         </tr>
                     </thead>
                     <tbody id="purchasesTableBody">
                         <tr>
-                            <td colspan="7">Loading purchases...</td>
+                            <td colspan="9">Loading purchases...</td>
                         </tr>
                     </tbody>
                 </table>
@@ -76,6 +53,162 @@
 </div>
 
 <script src="/theme.js"></script>
-<script src="/purchases.js"></script>
+
+<script>
+const API_BASE = window.location.origin;
+const token = localStorage.getItem("token");
+const loggedInUser = JSON.parse(localStorage.getItem("loggedInUser"));
+
+if (!token || !loggedInUser) {
+    window.location.href = "/login.html";
+}
+
+if (!loggedInUser.is_admin) {
+    window.location.href = "/dashboard.html";
+}
+
+function authHeaders() {
+    return {
+        "Authorization": `Bearer ${token}`
+    };
+}
+
+function ensureToastContainer() {
+    let container = document.getElementById("toastContainer");
+    if (!container) {
+        container = document.createElement("div");
+        container.id = "toastContainer";
+        container.className = "toast-container";
+        document.body.appendChild(container);
+    }
+    return container;
+}
+
+function showToast(message, type = "success") {
+    const container = ensureToastContainer();
+    const toast = document.createElement("div");
+    toast.className = `toast toast-${type}`;
+    toast.innerHTML = `
+        <span class="toast-icon">${type === "success" ? "✓" : "✕"}</span>
+        <span class="toast-text">${message}</span>
+        <button class="toast-close" type="button">&times;</button>
+    `;
+
+    toast.querySelector(".toast-close").addEventListener("click", () => {
+        toast.classList.remove("show");
+        setTimeout(() => toast.remove(), 250);
+    });
+
+    container.appendChild(toast);
+    requestAnimationFrame(() => toast.classList.add("show"));
+
+    setTimeout(() => {
+        toast.classList.remove("show");
+        setTimeout(() => toast.remove(), 250);
+    }, 3000);
+}
+
+function isExpiredDate(expiryDate) {
+    if (!expiryDate) return false;
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const expiry = new Date(expiryDate);
+    expiry.setHours(0, 0, 0, 0);
+
+    return expiry < today;
+}
+
+async function loadPurchases() {
+    try {
+        const response = await fetch(`${API_BASE}/admin/purchases`, {
+            headers: authHeaders()
+        });
+
+        const data = await response.json();
+        const tbody = document.getElementById("purchasesTableBody");
+        tbody.innerHTML = "";
+
+        if (!response.ok) {
+            tbody.innerHTML = `<tr><td colspan="9">${data.error || "Failed to load purchases"}</td></tr>`;
+            return;
+        }
+
+        if (!Array.isArray(data) || data.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="9">No purchases found.</td></tr>`;
+            return;
+        }
+
+        data.forEach(item => {
+            const expired = isExpiredDate(item.expiry_date);
+
+            const row = document.createElement("tr");
+            row.innerHTML = `
+                <td>${item.id}</td>
+                <td>${item.username || "-"}</td>
+                <td>${item.email || "-"}</td>
+                <td>${item.plan_name || "-"}</td>
+                <td>${item.amount || "-"}</td>
+                <td>${item.status || "-"}</td>
+                <td>${item.start_date || "-"}</td>
+                <td>${item.expiry_date || "-"}</td>
+                <td>
+                    ${
+                        expired
+                            ? `<button type="button" class="delete-btn remove-plan-btn" data-id="${item.id}">Remove</button>`
+                            : `<span class="role-user">Active</span>`
+                    }
+                </td>
+            `;
+            tbody.appendChild(row);
+        });
+
+        document.querySelectorAll(".remove-plan-btn").forEach(btn => {
+            btn.addEventListener("click", async () => {
+                const purchaseId = btn.dataset.id;
+
+                if (!confirm("Remove this expired plan?")) return;
+
+                try {
+                    const removeResponse = await fetch(`${API_BASE}/admin/purchases/remove/${purchaseId}`, {
+                        method: "DELETE",
+                        headers: authHeaders()
+                    });
+
+                    const removeData = await removeResponse.json();
+
+                    if (!removeResponse.ok) {
+                        showToast(removeData.error || "Failed to remove expired plan", "error");
+                        return;
+                    }
+
+                    showToast(removeData.message || "Expired plan removed successfully", "success");
+                    loadPurchases();
+                } catch (error) {
+                    showToast("Failed to remove expired plan", "error");
+                }
+            });
+        });
+
+    } catch (error) {
+        document.getElementById("purchasesTableBody").innerHTML =
+            `<tr><td colspan="9">Failed to load purchases.</td></tr>`;
+    }
+}
+
+window.addEventListener("DOMContentLoaded", () => {
+    loadPurchases();
+
+    const logoutBtn = document.getElementById("logoutBtn");
+    if (logoutBtn) {
+        logoutBtn.addEventListener("click", (e) => {
+            e.preventDefault();
+            localStorage.clear();
+            window.location.href = "/login.html";
+        });
+    }
+});
+</script>
 </body>
 </html>
