@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Manage Users - API Tool</title>
+    <title>Admin Role Management</title>
     <link rel="stylesheet" href="/style.css">
     <style>
         .page-wrap {
@@ -56,7 +56,7 @@
             text-align: left;
         }
 
-        input {
+        input, select {
             width: 100%;
             padding: 10px 12px;
             border-radius: 10px;
@@ -100,12 +100,13 @@
 <div class="page-wrap">
     <div class="topbar">
         <div>
-            <h1>Manage Users</h1>
-            <p>View, edit and delete users</p>
+            <h1>Admin Role Management</h1>
+            <p>Only super admin can assign CMS admin and Pricing admin</p>
         </div>
 
         <div class="topbar-links">
             <a href="/admin.html">Dashboard</a>
+            
             <a href="#" id="logoutBtn">Logout</a>
         </div>
     </div>
@@ -117,14 +118,15 @@
                     <tr>
                         <th>Username</th>
                         <th>Email</th>
-                        <th>Current Type</th>
+                        <th>Current Role</th>
+                        <th>Assign Role</th>
                         <th>Save</th>
                         <th>Delete</th>
                     </tr>
                 </thead>
                 <tbody id="usersTableBody">
                     <tr>
-                        <td colspan="5">Loading users...</td>
+                        <td colspan="6">Loading users...</td>
                     </tr>
                 </tbody>
             </table>
@@ -141,6 +143,11 @@ if (!token) {
     window.location.href = "/login.html";
 }
 
+if (!loggedInUser.is_admin || loggedInUser.admin_role !== "super_admin") {
+    alert("Only super admin can open this page");
+    window.location.href = "/admin.html";
+}
+
 function authHeaders(withJson = false) {
     if (withJson) {
         return {
@@ -154,14 +161,12 @@ function authHeaders(withJson = false) {
     };
 }
 
-function userTypeText(user) {
-    if (user.is_admin) {
-        if (user.admin_role === "super_admin") return "Super Admin";
-        if (user.admin_role === "cms_admin") return "CMS Admin";
-        if (user.admin_role === "pricing_admin") return "Pricing Admin";
-        return "Admin";
-    }
-    return "User";
+function roleText(role) {
+    if (!role) return "User";
+    if (role === "super_admin") return "Super Admin";
+    if (role === "cms_admin") return "CMS Admin";
+    if (role === "pricing_admin") return "Pricing Admin";
+    return role;
 }
 
 async function loadUsers() {
@@ -175,12 +180,12 @@ async function loadUsers() {
         tbody.innerHTML = "";
 
         if (!response.ok) {
-            tbody.innerHTML = `<tr><td colspan="5">${data.error || "Failed to load users"}</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="6">${data.error || "Failed to load users"}</td></tr>`;
             return;
         }
 
         if (!Array.isArray(data) || data.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="5">No users found</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="6">No users found</td></tr>`;
             return;
         }
 
@@ -191,7 +196,15 @@ async function loadUsers() {
             tr.innerHTML = `
                 <td><input type="text" class="username-input" value="${user.username || ""}"></td>
                 <td><input type="email" class="email-input" value="${user.email || ""}"></td>
-                <td><span class="badge">${userTypeText(user)}</span></td>
+                <td><span class="badge">${roleText(user.admin_role || "")}</span></td>
+                <td>
+                    <select class="role-select" ${isSelf ? "disabled" : ""}>
+                        <option value="" ${!user.admin_role ? "selected" : ""}>User</option>
+                        <option value="cms_admin" ${user.admin_role === "cms_admin" ? "selected" : ""}>CMS Admin</option>
+                        <option value="pricing_admin" ${user.admin_role === "pricing_admin" ? "selected" : ""}>Pricing Admin</option>
+                        <option value="super_admin" ${user.admin_role === "super_admin" ? "selected" : ""}>Super Admin</option>
+                    </select>
+                </td>
                 <td><button class="save-btn">Save</button></td>
                 <td>${isSelf ? "-" : '<button class="delete-btn">Delete</button>'}</td>
             `;
@@ -200,13 +213,15 @@ async function loadUsers() {
             saveBtn.addEventListener("click", async () => {
                 const username = tr.querySelector(".username-input").value.trim();
                 const email = tr.querySelector(".email-input").value.trim();
+                const admin_role = tr.querySelector(".role-select").value;
 
                 const res = await fetch(`${API_BASE}/users/${user.id}`, {
                     method: "PUT",
                     headers: authHeaders(true),
                     body: JSON.stringify({
                         username,
-                        email
+                        email,
+                        admin_role
                     })
                 });
 
@@ -248,7 +263,7 @@ async function loadUsers() {
 
     } catch (error) {
         document.getElementById("usersTableBody").innerHTML =
-            `<tr><td colspan="5">Failed to load users</td></tr>`;
+            `<tr><td colspan="6">Failed to load users</td></tr>`;
     }
 }
 

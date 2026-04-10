@@ -417,6 +417,15 @@ def serve_admin_settings_page():
 def serve_notifications_page():
     return send_from_directory(FRONTEND_DIR, "notifications.html")
 
+@app.route("/admin-roles.html")
+def serve_admin_roles_page():
+    return send_from_directory(FRONTEND_DIR, "admin-roles.html")
+
+
+@app.route("/register.html")
+def serve_register_page():
+    return send_from_directory(FRONTEND_DIR, "register.html")
+
 
 # ---------------- AUTH ---------------- #
 
@@ -1378,7 +1387,7 @@ def update_user(user_id):
             cursor = conn.cursor()
 
             if current_user_id() == user_id and admin_role == "":
-                return jsonify({"error": "Super admin cannot remove own admin role"}), 400
+                return jsonify({"error": "Super admin cannot remove own role"}), 400
 
             cursor.execute("""
                 UPDATE users
@@ -1386,6 +1395,7 @@ def update_user(user_id):
                 WHERE id = ?
             """, (username, email, is_admin, admin_role, user_id))
             conn.commit()
+
         return jsonify({"message": "User updated successfully"})
     except sqlite3.IntegrityError:
         return jsonify({"error": "Username or email already exists"}), 400

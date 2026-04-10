@@ -3,122 +3,341 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Pricing - API Tool</title>
+    <title>Pricing Admin - API Tool</title>
     <link rel="stylesheet" href="/style.css">
+    <style>
+        :root {
+            --bg: #0b1220;
+            --card: #111827;
+            --text: #f8fafc;
+            --soft: #94a3b8;
+            --border: #243041;
+            --primary: #2563eb;
+            --danger: #ef4444;
+        }
+
+        body.light-mode {
+            --bg: #f8fafc;
+            --card: #ffffff;
+            --text: #0f172a;
+            --soft: #475569;
+            --border: #dbe3ee;
+            --primary: #2563eb;
+            --danger: #ef4444;
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            background: var(--bg);
+            color: var(--text);
+            font-family: Arial, sans-serif;
+        }
+
+        .page-wrap {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 24px;
+        }
+
+        .topbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 18px;
+            flex-wrap: wrap;
+            margin-bottom: 24px;
+            padding-bottom: 14px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .topbar h1 {
+            margin: 0;
+            font-size: 28px;
+        }
+
+        .topbar p {
+            margin: 6px 0 0;
+            color: var(--soft);
+        }
+
+        .nav-links {
+            display: flex;
+            align-items: center;
+            gap: 18px;
+            flex-wrap: wrap;
+        }
+
+        .nav-links a,
+        .nav-links button {
+            background: none;
+            border: none;
+            color: var(--text);
+            text-decoration: none;
+            cursor: pointer;
+            font-size: 15px;
+            font-weight: 600;
+            padding: 0;
+        }
+
+        .nav-links a:hover,
+        .nav-links button:hover {
+            color: var(--primary);
+        }
+
+        .card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 18px;
+            margin-bottom: 20px;
+        }
+
+        .section-head {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-bottom: 14px;
+        }
+
+        .section-head h2 {
+            margin: 0;
+            font-size: 20px;
+        }
+
+        .section-head p {
+            margin: 0;
+            color: var(--soft);
+        }
+
+        .field {
+            margin-bottom: 14px;
+        }
+
+        .field label {
+            display: block;
+            margin-bottom: 6px;
+            font-weight: 600;
+        }
+
+        .field input,
+        .field textarea,
+        .field select {
+            width: 100%;
+            padding: 11px 12px;
+            border-radius: 10px;
+            border: 1px solid var(--border);
+            background: transparent;
+            color: var(--text);
+        }
+
+        .field textarea {
+            min-height: 110px;
+            resize: vertical;
+        }
+
+        .btn {
+            padding: 10px 14px;
+            border-radius: 10px;
+            border: none;
+            background: var(--primary);
+            color: white;
+            cursor: pointer;
+            font-weight: 700;
+        }
+
+        .btn-secondary {
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--text);
+        }
+
+        .btn-danger {
+            background: var(--danger);
+            color: white;
+        }
+
+        .plans-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 16px;
+        }
+
+        .plan-card {
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 14px;
+        }
+
+        .plan-card h3 {
+            margin: 0 0 8px;
+        }
+
+        .plan-card p {
+            margin: 0 0 8px;
+            color: var(--soft);
+        }
+
+        .plan-card .actions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-top: 12px;
+        }
+
+        .message-box {
+            margin-top: 10px;
+            font-size: 14px;
+            color: var(--soft);
+        }
+
+        .purchase-table-wrap {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            text-align: left;
+            padding: 12px;
+            border-bottom: 1px solid var(--border);
+            vertical-align: top;
+        }
+    </style>
 </head>
 <body>
-<div class="admin-page-wrapper">
-    <div class="admin-container">
+<div class="page-wrap">
+    <div class="topbar">
+        <div>
+            <h1>Pricing Admin</h1>
+            <p>Manage pricing page, plans, and purchases</p>
+        </div>
 
-        <div class="page-topbar">
+        <div class="nav-links">
+            <a href="#pricingPageSection">Pricing Page</a>
+            <a href="#purchaseSection">Purchase Management</a>
+            <button type="button" id="themeToggle">🌙 Toggle Color</button>
+            <a href="#" id="logoutBtn">Logout</a>
+        </div>
+    </div>
+
+    <div class="card" id="pricingPageSection">
+        <div class="section-head">
             <div>
-                <h1>Pricing Management</h1>
-                <p>Manage pricing page content and plans</p>
-            </div>
-
-            <div class="topbar-links">
-                <a href="#" id="themeToggle">🌙 Dark</a>
-                <a href="/admin.html">Admin</a>
-                <a href="/purchases.html">Purchases</a>
-                <a href="/notifications.html">Notifications</a>
-                <a href="#" id="logoutBtn" class="logout-link">Logout</a>
+                <h2>Pricing Page Content</h2>
+                <p>Edit title and description</p>
             </div>
         </div>
 
-        <section class="card">
-            <h2>Pricing Page Content</h2>
+        <div class="field">
+            <label for="pageTitle">Title</label>
+            <input type="text" id="pageTitle" placeholder="Pricing page title">
+        </div>
 
-            <label for="pricingTitle">Title</label>
-            <input type="text" id="pricingTitle" placeholder="Enter pricing page title">
+        <div class="field">
+            <label for="pageDescription">Description</label>
+            <textarea id="pageDescription" placeholder="Pricing page description"></textarea>
+        </div>
 
-            <label for="pricingDescription">Description</label>
-            <textarea id="pricingDescription" placeholder="Enter pricing page description"></textarea>
+        <button class="btn" id="savePricingPageBtn">Save Pricing Page</button>
+        <div id="pricingPageMsg" class="message-box"></div>
+    </div>
 
-            <div class="button-group" style="margin-top:16px;">
-                <button id="savePageBtn" type="button">Save Pricing Page</button>
+    <div class="card">
+        <div class="section-head">
+            <div>
+                <h2>Pricing Plans</h2>
+                <p>Edit existing plans</p>
             </div>
-        </section>
+        </div>
 
-        <section class="card">
-            <h2>Plans</h2>
-            <div id="plansContainer">
-                <p>Loading plans...</p>
+        <div id="plansGrid" class="plans-grid">
+            <p>Loading plans...</p>
+        </div>
+    </div>
+
+    <div class="card" id="purchaseSection">
+        <div class="section-head">
+            <div>
+                <h2>Purchase Management</h2>
+                <p>See purchases and remove expired plans</p>
             </div>
-        </section>
+        </div>
 
+        <div class="purchase-table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th>User</th>
+                        <th>Plan</th>
+                        <th>Status</th>
+                        <th>Dates</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody id="purchaseTableBody">
+                    <tr>
+                        <td colspan="5">Loading purchases...</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
     </div>
 </div>
-
-<script src="/theme.js"></script>
 
 <script>
 const API_BASE = window.location.origin;
 const token = localStorage.getItem("token");
-const loggedInUser = JSON.parse(localStorage.getItem("loggedInUser"));
+const loggedInUser = JSON.parse(localStorage.getItem("loggedInUser") || "{}");
 
-if (!token || !loggedInUser) {
+if (!token) {
     window.location.href = "/login.html";
 }
 
-if (!loggedInUser.is_admin) {
-    window.location.href = "/dashboard.html";
+if (!loggedInUser.is_admin || !["pricing_admin", "super_admin"].includes(loggedInUser.admin_role)) {
+    alert("Only pricing admin can access this page");
+    window.location.href = "/login.html";
 }
 
-function authHeaders() {
-    return {
-        "Authorization": `Bearer ${token}`
-    };
-}
-
-function authJsonHeaders() {
-    return {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${token}`
-    };
-}
-
-function ensureToastContainer() {
-    let container = document.getElementById("toastContainer");
-    if (!container) {
-        container = document.createElement("div");
-        container.id = "toastContainer";
-        container.className = "toast-container";
-        document.body.appendChild(container);
+function authHeaders(withJson = false) {
+    if (withJson) {
+        return {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`
+        };
     }
-    return container;
+    return {
+        "Authorization": `Bearer ${token}`
+    };
 }
 
-function showToast(message, type = "success") {
-    const container = ensureToastContainer();
-    const toast = document.createElement("div");
-    toast.className = `toast toast-${type}`;
-    toast.innerHTML = `
-        <span class="toast-icon">${type === "success" ? "✓" : "✕"}</span>
-        <span class="toast-text">${message}</span>
-        <button class="toast-close" type="button">&times;</button>
-    `;
-
-    toast.querySelector(".toast-close").addEventListener("click", () => {
-        toast.classList.remove("show");
-        setTimeout(() => toast.remove(), 250);
-    });
-
-    container.appendChild(toast);
-    requestAnimationFrame(() => toast.classList.add("show"));
-
-    setTimeout(() => {
-        toast.classList.remove("show");
-        setTimeout(() => toast.remove(), 250);
-    }, 3000);
+function setMsg(id, text, isError = false) {
+    const el = document.getElementById(id);
+    el.style.color = isError ? "#ef4444" : "var(--soft)";
+    el.textContent = text;
 }
 
-function escapeHtml(value) {
-    return String(value || "")
-        .replaceAll("&", "&amp;")
-        .replaceAll("<", "&lt;")
-        .replaceAll(">", "&gt;")
-        .replaceAll('"', "&quot;")
-        .replaceAll("'", "&#039;");
+function applySavedTheme() {
+    const saved = localStorage.getItem("themeMode");
+    if (saved === "light") {
+        document.body.classList.add("light-mode");
+    } else {
+        document.body.classList.remove("light-mode");
+    }
+}
+
+function toggleTheme() {
+    document.body.classList.toggle("light-mode");
+    localStorage.setItem(
+        "themeMode",
+        document.body.classList.contains("light-mode") ? "light" : "dark"
+    );
 }
 
 async function loadPricingPage() {
@@ -126,150 +345,223 @@ async function loadPricingPage() {
         const response = await fetch(`${API_BASE}/admin/pricing-page`, {
             headers: authHeaders()
         });
-
         const data = await response.json();
 
         if (!response.ok) {
-            showToast(data.error || "Failed to load pricing page", "error");
+            setMsg("pricingPageMsg", data.error || "Failed to load pricing page", true);
             return;
         }
 
-        document.getElementById("pricingTitle").value = data.title || "";
-        document.getElementById("pricingDescription").value = data.description || "";
-
+        document.getElementById("pageTitle").value = data.title || "";
+        document.getElementById("pageDescription").value = data.description || "";
         renderPlans(data.plans || []);
     } catch (error) {
-        showToast("Failed to load pricing page", "error");
+        setMsg("pricingPageMsg", "Failed to load pricing page", true);
     }
 }
 
 function renderPlans(plans) {
-    const container = document.getElementById("plansContainer");
-    container.innerHTML = "";
+    const grid = document.getElementById("plansGrid");
+    grid.innerHTML = "";
 
     if (!plans.length) {
-        container.innerHTML = "<p>No plans found.</p>";
+        grid.innerHTML = "<p>No plans found.</p>";
         return;
     }
 
     plans.forEach(plan => {
         const card = document.createElement("div");
-        card.className = "card";
-        card.style.marginTop = "16px";
+        card.className = "plan-card";
+
+        const featureText = Array.isArray(plan.features) ? plan.features.join("\n") : "";
 
         card.innerHTML = `
-            <label>Name</label>
-            <input type="text" class="plan-name" value="${escapeHtml(plan.name)}">
+            <h3>${plan.name}</h3>
 
-            <label>Price</label>
-            <input type="number" class="plan-price" value="${escapeHtml(plan.price)}">
+            <div class="field">
+                <label>Name</label>
+                <input type="text" class="plan-name" value="${plan.name || ""}">
+            </div>
 
-            <label>Duration Days</label>
-            <input type="number" class="plan-duration" value="${escapeHtml(plan.duration_days)}">
+            <div class="field">
+                <label>Price</label>
+                <input type="number" class="plan-price" value="${plan.price || 0}">
+            </div>
 
-            <label>Description</label>
-            <textarea class="plan-description">${escapeHtml(plan.description)}</textarea>
+            <div class="field">
+                <label>Duration Days</label>
+                <input type="number" class="plan-duration" value="${plan.duration_days || 30}">
+            </div>
 
-            <label>Features (comma separated)</label>
-            <input type="text" class="plan-features" value="${escapeHtml((plan.features || []).join(", "))}">
+            <div class="field">
+                <label>Description</label>
+                <textarea class="plan-description">${plan.description || ""}</textarea>
+            </div>
 
-            <div class="button-group" style="margin-top:16px;">
-                <button type="button" class="save-plan-btn" data-id="${plan.id}">
-                    Save ${escapeHtml(plan.name)}
-                </button>
+            <div class="field">
+                <label>Features (one per line)</label>
+                <textarea class="plan-features">${featureText}</textarea>
+            </div>
+
+            <div class="actions">
+                <button class="btn save-plan-btn">Save Plan</button>
             </div>
         `;
 
-        container.appendChild(card);
-    });
+        card.querySelector(".save-plan-btn").addEventListener("click", async () => {
+            const name = card.querySelector(".plan-name").value.trim();
+            const price = Number(card.querySelector(".plan-price").value);
+            const duration_days = Number(card.querySelector(".plan-duration").value);
+            const description = card.querySelector(".plan-description").value.trim();
+            const features = card.querySelector(".plan-features").value
+                .split("\n")
+                .map(item => item.trim())
+                .filter(Boolean);
 
-    document.querySelectorAll(".save-plan-btn").forEach(btn => {
-        btn.addEventListener("click", async () => {
-            const card = btn.closest(".card");
-            const planId = btn.dataset.id;
+            const response = await fetch(`${API_BASE}/admin/pricing-plans/${plan.id}`, {
+                method: "PUT",
+                headers: authHeaders(true),
+                body: JSON.stringify({
+                    name,
+                    price,
+                    duration_days,
+                    description,
+                    features
+                })
+            });
 
-            const payload = {
-                name: card.querySelector(".plan-name").value.trim(),
-                price: Number(card.querySelector(".plan-price").value),
-                duration_days: Number(card.querySelector(".plan-duration").value),
-                description: card.querySelector(".plan-description").value.trim(),
-                features: card.querySelector(".plan-features").value
-                    .split(",")
-                    .map(v => v.trim())
-                    .filter(Boolean)
-            };
+            const data = await response.json();
 
-            if (!payload.name || !payload.description || !payload.price || !payload.duration_days) {
-                showToast("Please fill all plan fields", "error");
+            if (!response.ok) {
+                alert(data.error || "Failed to update plan");
                 return;
             }
 
-            try {
-                const response = await fetch(`${API_BASE}/admin/pricing-plans/${planId}`, {
-                    method: "PUT",
-                    headers: authJsonHeaders(),
-                    body: JSON.stringify(payload)
-                });
-
-                const data = await response.json();
-
-                if (!response.ok) {
-                    showToast(data.error || "Failed to update plan", "error");
-                    return;
-                }
-
-                showToast(data.message || "Plan updated successfully", "success");
-                loadPricingPage();
-            } catch (error) {
-                showToast("Failed to update plan", "error");
-            }
+            alert(data.message || "Plan updated successfully");
+            loadPricingPage();
         });
+
+        grid.appendChild(card);
     });
 }
 
 async function savePricingPage() {
-    const title = document.getElementById("pricingTitle").value.trim();
-    const description = document.getElementById("pricingDescription").value.trim();
-
-    if (!title || !description) {
-        showToast("Title and description are required", "error");
-        return;
-    }
+    const title = document.getElementById("pageTitle").value.trim();
+    const description = document.getElementById("pageDescription").value.trim();
 
     try {
         const response = await fetch(`${API_BASE}/admin/pricing-page`, {
             method: "PUT",
-            headers: authJsonHeaders(),
+            headers: authHeaders(true),
             body: JSON.stringify({ title, description })
         });
 
         const data = await response.json();
 
         if (!response.ok) {
-            showToast(data.error || "Failed to update pricing page", "error");
+            setMsg("pricingPageMsg", data.error || "Failed to save pricing page", true);
             return;
         }
 
-        showToast(data.message || "Pricing page updated successfully", "success");
+        setMsg("pricingPageMsg", data.message || "Pricing page updated successfully");
     } catch (error) {
-        showToast("Failed to update pricing page", "error");
+        setMsg("pricingPageMsg", "Something went wrong", true);
     }
 }
 
-window.addEventListener("DOMContentLoaded", () => {
-    loadPricingPage();
+function isExpired(expiryDate) {
+    if (!expiryDate) return false;
+    const today = new Date().toISOString().slice(0, 10);
+    return expiryDate < today;
+}
 
-    document.getElementById("savePageBtn").addEventListener("click", savePricingPage);
-
-    const logoutBtn = document.getElementById("logoutBtn");
-    if (logoutBtn) {
-        logoutBtn.addEventListener("click", (e) => {
-            e.preventDefault();
-            localStorage.clear();
-            window.location.href = "/login.html";
+async function loadPurchases() {
+    try {
+        const response = await fetch(`${API_BASE}/admin/purchases`, {
+            headers: authHeaders()
         });
+
+        const data = await response.json();
+        const tbody = document.getElementById("purchaseTableBody");
+        tbody.innerHTML = "";
+
+        if (!response.ok) {
+            tbody.innerHTML = `<tr><td colspan="5">${data.error || "Failed to load purchases"}</td></tr>`;
+            return;
+        }
+
+        if (!Array.isArray(data) || !data.length) {
+            tbody.innerHTML = `<tr><td colspan="5">No purchases found</td></tr>`;
+            return;
+        }
+
+        data.forEach(item => {
+            const expired = isExpired(item.expiry_date);
+            const tr = document.createElement("tr");
+
+            tr.innerHTML = `
+                <td>
+                    <strong>${item.username || "-"}</strong><br>
+                    <span>${item.email || "-"}</span>
+                </td>
+                <td>
+                    ${item.plan_name || "-"}<br>
+                    ₹${item.amount || "-"}
+                </td>
+                <td>${item.status || "-"}</td>
+                <td>
+                    Start: ${item.start_date || "-"}<br>
+                    Expiry: ${item.expiry_date || "-"}
+                </td>
+                <td>
+                    ${expired
+                        ? `<button class="btn btn-danger remove-btn">Remove Expired</button>`
+                        : `<span style="color:var(--soft)">No action</span>`}
+                </td>
+            `;
+
+            const removeBtn = tr.querySelector(".remove-btn");
+            if (removeBtn) {
+                removeBtn.addEventListener("click", async () => {
+                    if (!confirm("Remove this expired plan?")) return;
+
+                    const res = await fetch(`${API_BASE}/admin/purchases/remove/${item.id}`, {
+                        method: "DELETE",
+                        headers: authHeaders()
+                    });
+
+                    const result = await res.json();
+
+                    if (!res.ok) {
+                        alert(result.error || "Failed to remove expired plan");
+                        return;
+                    }
+
+                    alert(result.message || "Expired plan removed successfully");
+                    loadPurchases();
+                });
+            }
+
+            tbody.appendChild(tr);
+        });
+
+    } catch (error) {
+        document.getElementById("purchaseTableBody").innerHTML =
+            `<tr><td colspan="5">Failed to load purchases</td></tr>`;
     }
+}
+
+document.getElementById("savePricingPageBtn").addEventListener("click", savePricingPage);
+document.getElementById("themeToggle").addEventListener("click", toggleTheme);
+document.getElementById("logoutBtn").addEventListener("click", (e) => {
+    e.preventDefault();
+    localStorage.clear();
+    window.location.href = "/login.html";
 });
+
+applySavedTheme();
+loadPricingPage();
+loadPurchases();
 </script>
 </body>
 </html>
