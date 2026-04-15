@@ -1,61 +1,202 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Collections</title>
-    <link rel="stylesheet" href="/style.css">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Collections - API Tool</title>
+<style>
+body {
+    margin: 0;
+    font-family: "Segoe UI", Arial, sans-serif;
+    background:
+        radial-gradient(circle at top left, rgba(14,165,233,0.14), transparent 28%),
+        radial-gradient(circle at top right, rgba(20,184,166,0.12), transparent 26%),
+        linear-gradient(180deg, #03111f 0%, #071224 100%);
+    color: #f8fafc;
+}
+.page-wrap {
+    max-width: 1320px;
+    margin: auto;
+    padding: 24px;
+}
+.topbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+    background: rgba(10, 18, 32, 0.82);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 22px;
+    padding: 22px 24px;
+    margin-bottom: 22px;
+}
+.topbar h1 {
+    margin: 0 0 6px;
+    font-size: 28px;
+}
+.topbar p {
+    margin: 0;
+    color: #94a3b8;
+}
+.topbar-links {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+.topbar-links a,
+.topbar-links button {
+    text-decoration: none;
+    border: none;
+    background: #13203a;
+    color: #f8fafc;
+    padding: 10px 14px;
+    border-radius: 12px;
+    cursor: pointer;
+    font-weight: 600;
+}
+.topbar-links a:hover,
+.topbar-links button:hover {
+    background: #1d4ed8;
+}
+.hero {
+    background: linear-gradient(135deg, #0ea5e9, #14b8a6);
+    border-radius: 24px;
+    padding: 28px;
+    margin-bottom: 22px;
+}
+.hero h2 {
+    margin: 0 0 8px;
+    font-size: 32px;
+}
+.hero p {
+    margin: 0;
+    color: rgba(255,255,255,0.92);
+}
+.grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 18px;
+}
+.card {
+    background: rgba(19, 32, 58, 0.92);
+    border: 1px solid rgba(148, 163, 184, 0.16);
+    border-radius: 22px;
+    padding: 22px;
+    transition: 0.25s ease;
+}
+.card:hover {
+    transform: translateY(-5px);
+}
+.card h3 {
+    margin: 0 0 10px;
+}
+.card p {
+    margin: 0 0 8px;
+    color: #94a3b8;
+    line-height: 1.6;
+}
+.small {
+    font-size: 13px;
+}
+@media (max-width: 1000px) {
+    .grid {
+        grid-template-columns: 1fr 1fr;
+    }
+}
+@media (max-width: 700px) {
+    .page-wrap {
+        padding: 16px;
+    }
+    .grid {
+        grid-template-columns: 1fr;
+    }
+}
+</style>
 </head>
 <body>
-<div class="admin-page-wrapper">
-    <div class="admin-container">
-
-        <div class="page-topbar">
-            <div>
-                <h1>Collections</h1>
-                <p>All users collections including admin</p>
-            </div>
-
-            <div class="topbar-actions">
-                <button id="themeToggle" class="theme-btn">☀ Light</button>
-                <a href="/admin.html" class="back-btn">← Dashboard</a>
-                <button id="deleteSelectedCollectionsBtn" class="danger-btn">Delete Selected</button>
-            </div>
+<div class="page-wrap">
+    <div class="topbar">
+        <div>
+            <h1>Collections</h1>
+            <p>Manage saved collections globally</p>
         </div>
-
-        <section class="card">
-            <div class="section-head">
-                <h2>Collections</h2>
-                <div class="button-group">
-                    <input type="text" id="searchCollection" placeholder="Search collections">
-                </div>
-            </div>
-
-            <div class="table-wrapper">
-                <table class="admin-table">
-                    <thead>
-                        <tr>
-                            <th><input type="checkbox" id="selectAllCollections"></th>
-                            <th>User</th>
-                            <th>Name</th>
-                            <th>Method</th>
-                            <th>URL</th>
-                            <th>Date</th>
-                        </tr>
-                    </thead>
-                    <tbody id="collectionsTableBody">
-                        <tr>
-                            <td colspan="6">Loading collections...</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-        </section>
-
+        <div class="topbar-links">
+            <button id="themeToggle">🌙 Dark</button>
+            <a href="/admin.html">Dashboard</a>
+            <a href="#" id="logoutBtn">Logout</a>
+        </div>
     </div>
+
+    <section class="hero">
+        <h2>Saved Collections</h2>
+        <p>Review all stored request collections across the platform.</p>
+    </section>
+
+    <section id="collectionsGrid" class="grid">
+        <div class="card">
+            <h3>Loading...</h3>
+            <p>Please wait while collections are loading.</p>
+        </div>
+    </section>
 </div>
 
 <script src="/theme.js"></script>
-<script src="/collections.js"></script>
+<script>
+const API_BASE = window.location.origin;
+const token = localStorage.getItem("token");
+
+if (!token) {
+    window.location.href = "/admin-login.html";
+}
+
+document.getElementById("logoutBtn").addEventListener("click", (e) => {
+    e.preventDefault();
+    localStorage.clear();
+    window.location.href = "/admin-login.html";
+});
+
+async function loadCollections() {
+    const grid = document.getElementById("collectionsGrid");
+
+    try {
+        const response = await fetch(`${API_BASE}/admin/collections`, {
+            headers: {
+                "Authorization": `Bearer ${token}`
+            }
+        });
+
+        const data = await response.json();
+        grid.innerHTML = "";
+
+        if (!response.ok) {
+            grid.innerHTML = `<div class="card"><h3>Error</h3><p>${data.error || "Failed to load collections"}</p></div>`;
+            return;
+        }
+
+        if (!Array.isArray(data) || data.length === 0) {
+            grid.innerHTML = `<div class="card"><h3>No Collections</h3><p>No collections found.</p></div>`;
+            return;
+        }
+
+        data.forEach(item => {
+            const div = document.createElement("div");
+            div.className = "card";
+            div.innerHTML = `
+                <h3>${item.name || "Untitled Collection"}</h3>
+                <p><strong style="color:#f8fafc;">User:</strong> ${item.username || "-"}</p>
+                <p><strong style="color:#f8fafc;">Method:</strong> ${item.method || "-"}</p>
+                <p><strong style="color:#f8fafc;">URL:</strong> ${item.url || "-"}</p>
+                <p class="small"><strong style="color:#f8fafc;">Created:</strong> ${item.created_at || "-"}</p>
+            `;
+            grid.appendChild(div);
+        });
+    } catch (error) {
+        grid.innerHTML = `<div class="card"><h3>Error</h3><p>Failed to load collections.</p></div>`;
+    }
+}
+
+loadCollections();
+</script>
 </body>
 </html>

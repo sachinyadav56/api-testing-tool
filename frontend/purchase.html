@@ -5,9 +5,230 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Purchase Plan - API Tool</title>
     <link rel="stylesheet" href="/style.css">
+    <style>
+        .purchase-page-shell {
+            min-height: 100vh;
+        }
+
+        .purchase-hero {
+            position: relative;
+            overflow: hidden;
+            background: var(--gradient-main);
+            color: #fff;
+            border-radius: 32px;
+            padding: 56px 42px;
+            margin-bottom: 30px;
+            box-shadow: 0 22px 60px rgba(6, 182, 212, 0.18);
+        }
+
+        .purchase-hero::after {
+            content: "";
+            position: absolute;
+            width: 260px;
+            height: 260px;
+            right: -40px;
+            top: -30px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.08);
+        }
+
+        .purchase-hero-content {
+            position: relative;
+            z-index: 1;
+            max-width: 760px;
+        }
+
+        .purchase-badge {
+            display: inline-block;
+            padding: 8px 14px;
+            border-radius: 999px;
+            background: rgba(255,255,255,0.14);
+            border: 1px solid rgba(255,255,255,0.18);
+            font-size: 13px;
+            font-weight: 800;
+            margin-bottom: 16px;
+        }
+
+        .purchase-hero h2 {
+            margin: 0 0 12px;
+            font-size: 48px;
+            line-height: 1.08;
+        }
+
+        .purchase-hero p {
+            margin: 0;
+            font-size: 18px;
+            line-height: 1.7;
+            color: rgba(255,255,255,0.92);
+        }
+
+        .purchase-plans-grid {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 24px;
+            align-items: stretch;
+        }
+
+        .purchase-plan-card {
+            position: relative;
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 30px;
+            padding: 30px;
+            box-shadow: var(--shadow);
+            transition: 0.25s ease;
+            display: flex;
+            flex-direction: column;
+            min-height: 100%;
+        }
+
+        .purchase-plan-card:hover {
+            transform: translateY(-8px);
+        }
+
+        .purchase-plan-card.featured {
+            border: 2px solid var(--primary);
+            transform: scale(1.02);
+            box-shadow: 0 22px 44px rgba(6, 182, 212, 0.16);
+        }
+
+        .purchase-plan-card.featured:hover {
+            transform: scale(1.02) translateY(-8px);
+        }
+
+        .purchase-plan-label {
+            display: inline-block;
+            margin-bottom: 14px;
+            padding: 7px 12px;
+            border-radius: 999px;
+            background: rgba(6, 182, 212, 0.12);
+            color: var(--primary);
+            font-size: 12px;
+            font-weight: 800;
+        }
+
+        .purchase-plan-card h3 {
+            margin: 0 0 14px;
+            font-size: 30px;
+            color: var(--text);
+        }
+
+        .purchase-price {
+            display: flex;
+            align-items: flex-end;
+            gap: 6px;
+            margin-bottom: 10px;
+        }
+
+        .purchase-price .currency {
+            font-size: 24px;
+            font-weight: 700;
+            line-height: 1;
+        }
+
+        .purchase-price .amount {
+            font-size: 48px;
+            font-weight: 800;
+            line-height: 1;
+        }
+
+        .purchase-duration {
+            color: var(--text-soft);
+            font-size: 14px;
+            margin-bottom: 18px;
+        }
+
+        .purchase-plan-card p {
+            margin: 0 0 18px;
+            color: var(--text-soft);
+            line-height: 1.7;
+        }
+
+        .purchase-plan-card ul {
+            margin: 0 0 24px;
+            padding-left: 20px;
+            color: var(--text);
+            flex: 1;
+        }
+
+        .purchase-plan-card li {
+            margin-bottom: 10px;
+            color: var(--text-soft);
+            line-height: 1.6;
+        }
+
+        .purchase-btn {
+            width: 100%;
+            display: inline-flex;
+            justify-content: center;
+            align-items: center;
+            text-decoration: none;
+            padding: 15px 18px;
+            border-radius: 16px;
+            background: var(--primary);
+            color: #fff;
+            font-weight: 800;
+            font-size: 16px;
+            border: none;
+            cursor: pointer;
+            transition: 0.2s ease;
+            box-shadow: 0 12px 26px rgba(6, 182, 212, 0.22);
+        }
+
+        .purchase-btn:hover {
+            background: var(--primary-hover);
+            transform: translateY(-2px);
+        }
+
+        .purchase-btn.secondary {
+            background: var(--bg-hover);
+            color: var(--text);
+            border: 1px solid var(--border);
+            box-shadow: none;
+        }
+
+        .purchase-empty {
+            text-align: center;
+            padding: 40px 24px;
+            color: var(--text-soft);
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 24px;
+            box-shadow: var(--shadow);
+        }
+
+        @media (max-width: 1100px) {
+            .purchase-plans-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .purchase-hero {
+                padding: 40px 24px;
+            }
+
+            .purchase-hero h2 {
+                font-size: 34px;
+            }
+
+            .purchase-hero p {
+                font-size: 16px;
+            }
+
+            .purchase-plans-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .purchase-plan-card.featured,
+            .purchase-plan-card.featured:hover {
+                transform: none;
+            }
+        }
+    </style>
 </head>
 <body>
-<div class="admin-page-wrapper">
+<div class="admin-page-wrapper purchase-page-shell">
     <div class="admin-container">
 
         <div class="page-topbar">
@@ -22,17 +243,22 @@
             </div>
         </div>
 
-        <section class="hero-card">
-            <h2 id="purchasePageTitle">Simple pricing for every workflow</h2>
-            <p id="purchasePageDescription">
-                Choose a plan that fits your API testing and management needs.
-            </p>
+        <section class="purchase-hero">
+            <div class="purchase-hero-content">
+                <span class="purchase-badge">Plans & Subscription</span>
+                <h2 id="purchasePageTitle">Simple pricing for every workflow</h2>
+                <p id="purchasePageDescription">
+                    Choose a plan that fits your API testing and management needs.
+                </p>
+            </div>
         </section>
 
-        <section id="purchasePlansGrid" class="pricing-grid">
-            <div class="pricing-card">
-                <h3>Loading...</h3>
-                <p>Please wait while plans are loading.</p>
+        <section id="purchasePlansGrid" class="purchase-plans-grid">
+            <div class="purchase-plan-card">
+                <span class="purchase-plan-label">Loading</span>
+                <h3>Please wait</h3>
+                <p>Plans are loading.</p>
+                <button class="purchase-btn secondary" disabled>Loading...</button>
             </div>
         </section>
 

@@ -1,181 +1,237 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Notifications - API Tool</title>
-    <link rel="stylesheet" href="/style.css">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Notifications - Admin Panel</title>
+<style>
+body {
+    margin: 0;
+    font-family: "Segoe UI", Arial, sans-serif;
+    background: linear-gradient(180deg, #020617, #06101d);
+    color: #f8fafc;
+}
+
+.page-wrap {
+    max-width: 1200px;
+    margin: auto;
+    padding: 24px;
+}
+
+.topbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+    background: rgba(15, 23, 42, 0.92);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 18px;
+    padding: 20px 24px;
+    margin-bottom: 22px;
+}
+
+.topbar h1 {
+    margin: 0 0 6px;
+    font-size: 28px;
+}
+
+.topbar p {
+    margin: 0;
+    color: #94a3b8;
+}
+
+.topbar-links {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.topbar-links a,
+.topbar-links button {
+    text-decoration: none;
+    border: none;
+    background: #13203a;
+    color: #f8fafc;
+    padding: 10px 14px;
+    border-radius: 12px;
+    cursor: pointer;
+    font-weight: 600;
+}
+
+.topbar-links a:hover,
+.topbar-links button:hover {
+    background: #1d4ed8;
+}
+
+.hero {
+    background: linear-gradient(135deg, #0ea5e9, #14b8a6);
+    border-radius: 22px;
+    padding: 28px;
+    margin-bottom: 22px;
+}
+
+.hero h2 {
+    margin: 0 0 8px;
+    font-size: 32px;
+}
+
+.hero p {
+    margin: 0;
+    color: rgba(255,255,255,0.92);
+}
+
+.card {
+    background: #13203a;
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 18px;
+    padding: 20px;
+}
+
+.list {
+    display: grid;
+    gap: 14px;
+}
+
+.item {
+    background: #0f172a;
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 14px;
+    padding: 16px;
+}
+
+.item-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 8px;
+}
+
+.item h3 {
+    margin: 0;
+    font-size: 18px;
+}
+
+.item p {
+    margin: 0;
+    color: #94a3b8;
+    line-height: 1.6;
+}
+
+.badge {
+    display: inline-block;
+    padding: 6px 10px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.badge.unread {
+    background: rgba(239, 68, 68, 0.14);
+    color: #ef4444;
+}
+
+.badge.read {
+    background: rgba(34, 197, 94, 0.14);
+    color: #22c55e;
+}
+
+.empty-box {
+    padding: 28px;
+    text-align: center;
+    color: #94a3b8;
+}
+</style>
 </head>
 <body>
-<div class="admin-page-wrapper">
-    <div class="admin-container">
-
-        <div class="page-topbar">
-            <div>
-                <h1>Notifications</h1>
-                <p>Your latest alerts and updates</p>
-            </div>
-
-            <div class="topbar-links">
-                <a href="#" id="themeToggle">🌙 Dark</a>
-                <a href="#" id="backLink">Back</a>
-                <a href="#" id="logoutBtn" class="logout-link">Logout</a>
-            </div>
+<div class="page-wrap">
+    <div class="topbar">
+        <div>
+            <h1>Notifications</h1>
+            <p>Track platform alerts and updates</p>
         </div>
 
-        <section class="card">
-            <div id="notificationsList">
-                <p>Loading notifications...</p>
-            </div>
-        </section>
-
+        <div class="topbar-links">
+            <button id="themeToggle">🌙 Dark</button>
+            <a href="/admin.html">Dashboard</a>
+            <a href="/queries.html">Queries</a>
+            <a href="#" id="logoutBtn">Logout</a>
+        </div>
     </div>
+
+    <section class="hero">
+        <h2>Admin Notifications</h2>
+        <p>Review all unread and recent system notifications.</p>
+    </section>
+
+    <section class="card">
+        <div id="notificationsList" class="list">
+            <div class="empty-box">Loading notifications...</div>
+        </div>
+    </section>
 </div>
 
 <script src="/theme.js"></script>
-
 <script>
 const API_BASE = window.location.origin;
 const token = localStorage.getItem("token");
-const loggedInUser = JSON.parse(localStorage.getItem("loggedInUser"));
 
-if (!token || !loggedInUser) {
-    window.location.href = "/login.html";
+if (!token) {
+    window.location.href = "/admin-login.html";
 }
 
-function authHeaders() {
-    return {
-        "Authorization": `Bearer ${token}`
-    };
-}
-
-function ensureToastContainer() {
-    let container = document.getElementById("toastContainer");
-    if (!container) {
-        container = document.createElement("div");
-        container.id = "toastContainer";
-        container.className = "toast-container";
-        document.body.appendChild(container);
-    }
-    return container;
-}
-
-function showToast(message, type = "success") {
-    const container = ensureToastContainer();
-    const toast = document.createElement("div");
-    toast.className = `toast toast-${type}`;
-    toast.innerHTML = `
-        <span class="toast-icon">${type === "success" ? "✓" : "✕"}</span>
-        <span class="toast-text">${message}</span>
-        <button class="toast-close" type="button">&times;</button>
-    `;
-
-    toast.querySelector(".toast-close").addEventListener("click", () => {
-        toast.classList.remove("show");
-        setTimeout(() => toast.remove(), 250);
-    });
-
-    container.appendChild(toast);
-    requestAnimationFrame(() => toast.classList.add("show"));
-
-    setTimeout(() => {
-        toast.classList.remove("show");
-        setTimeout(() => toast.remove(), 250);
-    }, 2500);
-}
+document.getElementById("logoutBtn").addEventListener("click", (e) => {
+    e.preventDefault();
+    localStorage.clear();
+    window.location.href = "/admin-login.html";
+});
 
 async function loadNotifications() {
+    const list = document.getElementById("notificationsList");
+
     try {
         const response = await fetch(`${API_BASE}/notifications`, {
-            headers: authHeaders()
+            headers: {
+                "Authorization": `Bearer ${token}`
+            }
         });
 
         const data = await response.json();
-        const list = document.getElementById("notificationsList");
         list.innerHTML = "";
 
         if (!response.ok) {
-            list.innerHTML = `<p>${data.error || "Failed to load notifications"}</p>`;
+            list.innerHTML = `<div class="empty-box">${data.error || "Failed to load notifications"}</div>`;
             return;
         }
 
         if (!Array.isArray(data) || data.length === 0) {
-            list.innerHTML = `<p>No notifications found.</p>`;
+            list.innerHTML = `<div class="empty-box">No notifications found</div>`;
             return;
         }
 
         data.forEach(item => {
-            const box = document.createElement("div");
-            box.className = Number(item.is_read) === 0
-                ? "overview-item notification-unread"
-                : "overview-item notification-read";
-
-            box.style.marginBottom = "12px";
-
-            box.innerHTML = `
-                <div>
-                    <strong style="font-size:18px;">${item.title || "Notification"}</strong>
-                    <p style="margin:6px 0 0;">${item.message || ""}</p>
-                    <small style="color:var(--text-soft);">${item.created_at || ""}</small>
+            const div = document.createElement("div");
+            div.className = "item";
+            div.innerHTML = `
+                <div class="item-top">
+                    <h3>${item.title || "Notification"}</h3>
+                    <span class="badge ${item.is_read ? "read" : "unread"}">
+                        ${item.is_read ? "Read" : "Unread"}
+                    </span>
                 </div>
-                <div>
-                    ${
-                        Number(item.is_read) === 1
-                            ? `<span class="role-user">Read</span>`
-                            : `<button type="button" class="mark-read-btn" data-id="${item.id}">Mark Read</button>`
-                    }
-                </div>
+                <p>${item.message || "-"}</p>
+                <p style="margin-top:10px; font-size:13px;">${item.created_at || "-"}</p>
             `;
-
-            list.appendChild(box);
+            list.appendChild(div);
         });
-
-        document.querySelectorAll(".mark-read-btn").forEach(btn => {
-            btn.addEventListener("click", async () => {
-                const id = btn.dataset.id;
-
-                try {
-                    const response = await fetch(`${API_BASE}/notifications/${id}/read`, {
-                        method: "PUT",
-                        headers: authHeaders()
-                    });
-
-                    const data = await response.json();
-
-                    if (!response.ok) {
-                        showToast(data.error || "Failed to mark as read", "error");
-                        return;
-                    }
-
-                    loadNotifications();
-                } catch (error) {
-                    showToast("Failed to mark notification as read", "error");
-                }
-            });
-        });
-
     } catch (error) {
-        document.getElementById("notificationsList").innerHTML =
-            `<p>Failed to load notifications.</p>`;
+        list.innerHTML = `<div class="empty-box">Failed to load notifications</div>`;
     }
 }
 
-window.addEventListener("DOMContentLoaded", () => {
-    const backLink = document.getElementById("backLink");
-    backLink.href = loggedInUser.is_admin ? "/admin.html" : "/dashboard.html";
-    backLink.textContent = loggedInUser.is_admin ? "Admin Dashboard" : "User Dashboard";
-
-    const logoutBtn = document.getElementById("logoutBtn");
-    if (logoutBtn) {
-        logoutBtn.addEventListener("click", (e) => {
-            e.preventDefault();
-            localStorage.clear();
-            window.location.href = "/login.html";
-        });
-    }
-
-    loadNotifications();
-});
+loadNotifications();
 </script>
 </body>
 </html>

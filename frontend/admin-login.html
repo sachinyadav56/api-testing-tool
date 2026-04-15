@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - API Tool</title>
+    <title>Admin Login - API Tool</title>
     <link rel="stylesheet" href="/style.css">
     <style>
         .auth-page {
@@ -45,7 +45,8 @@
             font-weight: 600;
         }
 
-        .field input {
+        .field input,
+        .field select {
             width: 100%;
             padding: 12px 14px;
             border-radius: 10px;
@@ -102,13 +103,22 @@
 <body>
 <div class="auth-page">
     <div class="auth-card">
-        <h1>User Login</h1>
-        <p>Access your API Tool account</p>
+        <h1>Admin Login</h1>
+        <p>Access admin control panel</p>
 
-        <form id="loginForm">
+        <form id="adminLoginForm">
+            <div class="field">
+                <label for="adminRole">Admin Role</label>
+                <select id="adminRole">
+                    <option value="super_admin">Super Admin</option>
+                    <option value="cms_admin">CMS Admin</option>
+                    <option value="pricing_admin">Pricing Admin</option>
+                </select>
+            </div>
+
             <div class="field">
                 <label for="email">Email</label>
-                <input type="email" id="email" placeholder="Enter email" required>
+                <input type="email" id="email" placeholder="Enter admin email" required>
             </div>
 
             <div class="field">
@@ -122,17 +132,16 @@
         <div id="messageBox" class="msg"></div>
 
         <div class="bottom-links">
-            Don’t have an account?
-            <a href="/register.html">Register</a>
-            <br><br>
-            <a href="/page/home">← Back to Home</a>
+            <a href="http://127.0.0.1:5000/page/home">← Back to Home</a>
         </div>
     </div>
 </div>
 
 <script>
 const API_BASE = "http://127.0.0.1:5000";
-const loginForm = document.getElementById("loginForm");
+const ADMIN_BASE = window.location.origin;
+
+const adminLoginForm = document.getElementById("adminLoginForm");
 const messageBox = document.getElementById("messageBox");
 
 function showMessage(message, type = "error") {
@@ -140,9 +149,10 @@ function showMessage(message, type = "error") {
     messageBox.textContent = message;
 }
 
-loginForm.addEventListener("submit", async (e) => {
+adminLoginForm.addEventListener("submit", async (e) => {
     e.preventDefault();
 
+    const adminRole = document.getElementById("adminRole").value;
     const email = document.getElementById("email").value.trim();
     const password = document.getElementById("password").value.trim();
 
@@ -155,7 +165,7 @@ loginForm.addEventListener("submit", async (e) => {
             body: JSON.stringify({
                 email,
                 password,
-                login_as: "user"
+                login_as: "admin"
             })
         });
 
@@ -166,13 +176,25 @@ loginForm.addEventListener("submit", async (e) => {
             return;
         }
 
+        if ((data.user.admin_role || "") !== adminRole) {
+            showMessage("This account is not the selected admin role", "error");
+            return;
+        }
+
         localStorage.setItem("token", data.access_token);
         localStorage.setItem("loggedInUser", JSON.stringify(data.user));
-        window.location.href = `${API_BASE}/dashboard.html`;
+
+        if (data.user.admin_role === "cms_admin") {
+            window.location.href = `${ADMIN_BASE}/cms.html`;
+        } else if (data.user.admin_role === "pricing_admin") {
+            window.location.href = `${ADMIN_BASE}/admin-pricing.html`;
+        } else {
+            window.location.href = `${ADMIN_BASE}/admin.html`;
+        }
 
     } catch (error) {
-        console.error("User login error:", error);
-        showMessage("Cannot connect to login server", "error");
+    console.error(error);
+    showMessage("app.py server is not running on port 5000", "error");
     }
 });
 </script>

@@ -22,11 +22,15 @@
     --gradient-soft: linear-gradient(135deg, rgba(6, 182, 212, 0.14), rgba(20, 184, 166, 0.12));
     --glass: rgba(10, 18, 32, 0.72);
 
-    /* public page theme */
-    --public-bg: linear-gradient(180deg, #eef3f7 0%, #e8eef4 100%);
-    --public-topbar-bg: #3f4856;
-    --public-topbar-text: #e2e8f0;
-    --public-logo: #0f172a;
+    --card: var(--bg-card);
+    --topbar-bg: var(--glass);
+    --input-bg: var(--bg-soft);
+    --btn-text: #ffffff;
+
+    --public-bg: linear-gradient(180deg, #03111f 0%, #071224 100%);
+    --public-topbar-bg: #07162c;
+    --public-topbar-text: #cbd5e1;
+    --public-logo: #f8fafc;
 
     --public-hero-bg: linear-gradient(135deg, #081a3b 0%, #1296c7 60%, #29c7b8 100%);
     --public-hero-text: #ffffff;
@@ -34,19 +38,20 @@
     --public-badge-bg: rgba(255,255,255,0.16);
     --public-badge-border: rgba(255,255,255,0.18);
 
-    --public-card-bg: #f8fafc;
-    --public-card-border: #dbe5ef;
-    --public-card-title: #0f172a;
-    --public-card-text: #64748b;
+    --public-card-bg: #111827;
+    --public-card-border: rgba(255,255,255,0.08);
+    --public-card-title: #f8fafc;
+    --public-card-text: #94a3b8;
 
-    --public-footer-text: #64748b;
-    --public-loading-bg: rgba(255,255,255,0.75);
-    --public-loading-text: #0f172a;
+    --public-footer-text: #94a3b8;
+    --public-loading-bg: rgba(17,24,39,0.92);
+    --public-loading-text: #f8fafc;
     --public-btn-bg: #ffffff;
     --public-btn-text: #0f172a;
 }
 
-:root[data-theme="light"] {
+:root[data-theme="light"],
+body.light-mode {
     --bg: #f4f8fc;
     --bg-soft: rgba(255, 255, 255, 0.92);
     --bg-card: #ffffff;
@@ -67,33 +72,63 @@
     --gradient-soft: linear-gradient(135deg, rgba(8, 145, 178, 0.10), rgba(20, 184, 166, 0.10));
     --glass: rgba(255, 255, 255, 0.80);
 
+    --card: var(--bg-card);
+    --topbar-bg: var(--glass);
+    --input-bg: var(--bg-soft);
+    --btn-text: #ffffff;
+
     --public-bg: linear-gradient(180deg, #eef3f7 0%, #e8eef4 100%);
-    --public-topbar-bg: #3f4856;
-    --public-topbar-text: #e2e8f0;
+    --public-topbar-bg: #ffffff;
+    --public-topbar-text: #334155;
     --public-logo: #0f172a;
 
-    --public-hero-bg: linear-gradient(135deg, #081a3b 0%, #1296c7 60%, #29c7b8 100%);
+    --public-hero-bg: linear-gradient(135deg, #0f172a 0%, #0891b2 60%, #14b8a6 100%);
     --public-hero-text: #ffffff;
     --public-hero-subtext: rgba(255,255,255,0.92);
     --public-badge-bg: rgba(255,255,255,0.16);
     --public-badge-border: rgba(255,255,255,0.18);
 
-    --public-card-bg: #f8fafc;
+    --public-card-bg: #ffffff;
     --public-card-border: #dbe5ef;
     --public-card-title: #0f172a;
     --public-card-text: #64748b;
 
     --public-footer-text: #64748b;
-    --public-loading-bg: rgba(255,255,255,0.75);
+    --public-loading-bg: rgba(255,255,255,0.85);
     --public-loading-text: #0f172a;
     --public-btn-bg: #ffffff;
     --public-btn-text: #0f172a;
 }
 
-body.dark-mode,
-:root[data-theme="dark"] {
+:root[data-theme="dark"],
+body.dark-mode {
+    --bg: #0a1020;
+    --bg-soft: #10192d;
+    --bg-card: #13203a;
+    --bg-hover: #1a2947;
+    --text: #f8fbff;
+    --text-soft: #9fb0c9;
+    --border: rgba(148, 163, 184, 0.16);
+
+    --primary: #06b6d4;
+    --primary-hover: #0891b2;
+    --secondary: #14b8a6;
+    --success: #22c55e;
+    --warning: #f59e0b;
+    --danger: #ef4444;
+
+    --shadow: 0 18px 45px rgba(0, 0, 0, 0.28);
+    --gradient-main: linear-gradient(135deg, #0f172a 0%, #0ea5e9 55%, #14b8a6 100%);
+    --gradient-soft: linear-gradient(135deg, rgba(6, 182, 212, 0.14), rgba(20, 184, 166, 0.12));
+    --glass: rgba(10, 18, 32, 0.72);
+
+    --card: var(--bg-card);
+    --topbar-bg: var(--glass);
+    --input-bg: var(--bg-soft);
+    --btn-text: #ffffff;
+
     --public-bg: linear-gradient(180deg, #03111f 0%, #071224 100%);
-    --public-topbar-bg: #3f4856;
+    --public-topbar-bg: #07162c;
     --public-topbar-text: #cbd5e1;
     --public-logo: #f8fafc;
 
@@ -151,7 +186,7 @@ select {
     padding: 14px 16px;
     border: 1px solid var(--border);
     border-radius: var(--radius-sm);
-    background: var(--bg-soft);
+    background: var(--input-bg);
     color: var(--text);
     outline: none;
     transition: 0.2s ease;
@@ -190,7 +225,8 @@ button:hover {
     width: 100%;
 }
 
-.theme-btn {
+.theme-btn,
+.theme-toggle-btn {
     background: var(--bg-hover);
     color: var(--text);
     border: 1px solid var(--border);
@@ -199,7 +235,8 @@ button:hover {
     border-radius: 12px;
 }
 
-.theme-btn:hover {
+.theme-btn:hover,
+.theme-toggle-btn:hover {
     background: var(--primary);
     color: #fff;
 }
@@ -255,7 +292,7 @@ button:hover {
     background:
         radial-gradient(circle at top left, rgba(6, 182, 212, 0.20), transparent 30%),
         radial-gradient(circle at bottom right, rgba(20, 184, 166, 0.18), transparent 28%),
-        linear-gradient(135deg, #0b1220, #131d31);
+        linear-gradient(135deg, var(--bg), var(--bg-soft));
 }
 
 .auth-container {
@@ -268,13 +305,13 @@ button:hover {
 .auth-card {
     width: 100%;
     max-width: 440px;
-    background: rgba(255,255,255,0.08);
+    background: var(--card);
     backdrop-filter: blur(18px);
-    border: 1px solid rgba(255,255,255,0.12);
+    border: 1px solid var(--border);
     box-shadow: 0 24px 60px rgba(0, 0, 0, 0.30);
     border-radius: 28px;
     padding: 32px;
-    color: #fff;
+    color: var(--text);
 }
 
 .auth-card h1 {
@@ -283,24 +320,26 @@ button:hover {
 }
 
 .subtitle,
-.toggle-text {
-    color: rgba(255,255,255,0.78);
+.toggle-text,
+.auth-card p {
+    color: var(--text-soft);
 }
 
 .toggle-link {
-    color: #fff;
+    color: var(--primary);
     font-weight: 700;
     cursor: pointer;
 }
 
-.auth-card input {
-    background: rgba(255,255,255,0.10);
-    border: 1px solid rgba(255,255,255,0.14);
-    color: #fff;
+.auth-card input,
+.auth-card select {
+    background: var(--input-bg);
+    border: 1px solid var(--border);
+    color: var(--text);
 }
 
 .auth-card input::placeholder {
-    color: rgba(255,255,255,0.64);
+    color: var(--text-soft);
 }
 
 .input-group {
@@ -327,8 +366,16 @@ button:hover {
 .admin-page-wrapper,
 .docs-page,
 .contact-page-shell,
-.public-page {
+.public-page,
+.public-page-wrap {
     min-height: 100vh;
+}
+
+/* better admin background */
+.admin-page-wrapper {
+    background:
+        radial-gradient(circle at top center, rgba(6, 182, 212, 0.12), transparent 24%),
+        linear-gradient(180deg, #07111f 0%, #040b17 100%);
 }
 
 header,
@@ -339,7 +386,7 @@ header,
     align-items: center;
     gap: 16px;
     flex-wrap: wrap;
-    background: var(--glass);
+    background: var(--topbar-bg);
     backdrop-filter: blur(16px);
     border: 1px solid var(--border);
     border-radius: 28px;
@@ -405,7 +452,7 @@ header p,
 }
 
 .quick-links-grid {
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(5, 1fr);
     margin-bottom: 18px;
 }
 
@@ -433,7 +480,7 @@ header p,
 .contact-info-panel,
 .contact-form-panel,
 .contact-strip-card {
-    background: var(--glass);
+    background: var(--card);
     backdrop-filter: blur(14px);
     border: 1px solid var(--border);
     border-radius: 26px;
@@ -452,7 +499,13 @@ header p,
 }
 
 .stat-box {
-    padding: 20px;
+    padding: 22px;
+    transition: 0.22s ease;
+}
+
+.stat-box:hover {
+    transform: translateY(-5px);
+    border-color: rgba(6, 182, 212, 0.35);
 }
 
 .stat-box h3 {
@@ -464,7 +517,7 @@ header p,
 
 .stat-box p {
     margin: 0;
-    font-size: 30px;
+    font-size: 34px;
     font-weight: 800;
 }
 
@@ -486,8 +539,9 @@ header p,
 }
 
 .quick-card:hover {
-    transform: translateY(-5px);
+    transform: translateY(-6px);
     border-color: rgba(6, 182, 212, 0.35);
+    box-shadow: 0 22px 38px rgba(0, 0, 0, 0.35);
 }
 
 .quick-card:hover::before {
@@ -537,12 +591,27 @@ header p,
 .hero-card {
     padding: 34px;
     margin-bottom: 20px;
+    position: relative;
+    overflow: hidden;
+}
+
+.hero-card::after {
+    content: "";
+    position: absolute;
+    right: -55px;
+    top: -35px;
+    width: 220px;
+    height: 220px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.08);
 }
 
 .hero-card h2 {
     margin-bottom: 10px;
     font-size: 38px;
     line-height: 1.1;
+    position: relative;
+    z-index: 1;
 }
 
 .hero-card p {
@@ -551,6 +620,8 @@ header p,
     font-size: 17px;
     line-height: 1.7;
     max-width: 850px;
+    position: relative;
+    z-index: 1;
 }
 
 .response-top,
@@ -663,8 +734,6 @@ pre {
     color: var(--text);
 }
 
-/* public page final fixed styles */
-
 .public-page-wrap {
     min-height: 100vh;
     background: var(--public-bg);
@@ -672,7 +741,8 @@ pre {
     transition: background 0.3s ease;
 }
 
-.public-topbar {
+.public-topbar,
+.public-header {
     width: calc(100% - 32px);
     margin: 16px auto 0;
     background: var(--public-topbar-bg);
@@ -688,7 +758,8 @@ pre {
     transition: all 0.3s ease;
 }
 
-.public-logo {
+.public-logo,
+.public-brand {
     font-size: 28px;
     font-weight: 800;
     color: var(--public-logo);
@@ -714,18 +785,8 @@ pre {
     opacity: 0.86;
 }
 
-.theme-toggle-btn {
-    border: none;
-    background: #f1f5f9;
-    color: #111827;
-    padding: 12px 22px;
-    border-radius: 16px;
-    font-weight: 700;
-    cursor: pointer;
-    box-shadow: none;
-}
-
-.dynamic-page-shell {
+.dynamic-page-shell,
+.dynamic-page-content {
     max-width: 1280px;
     margin: 40px auto 0;
     padding: 0 20px;
@@ -766,7 +827,8 @@ pre {
     border-radius: 50%;
 }
 
-.hero-badge {
+.hero-badge,
+.premium-badge {
     display: inline-block;
     padding: 10px 18px;
     border-radius: 999px;
@@ -850,7 +912,6 @@ pre {
     transition: color 0.3s ease;
 }
 
-/* docs and contact */
 .docs-layout {
     grid-template-columns: 240px 1fr;
     gap: 40px;
@@ -1162,6 +1223,19 @@ canvas {
     color: #dc2626;
 }
 
+.admin-link {
+    display: block;
+    margin-top: 10px;
+    font-size: 12px;
+    color: #94a3b8;
+    text-decoration: none;
+    opacity: 0.6;
+}
+
+.admin-link:hover {
+    opacity: 1;
+}
+
 @media (max-width: 1100px) {
     .stats-grid,
     .stats-grid-public,
@@ -1201,7 +1275,8 @@ canvas {
         grid-template-columns: 1fr;
     }
 
-    .public-topbar {
+    .public-topbar,
+    .public-header {
         padding: 18px 22px;
     }
 }
@@ -1242,7 +1317,8 @@ canvas {
         font-size: 34px;
     }
 
-    .public-topbar {
+    .public-topbar,
+    .public-header {
         flex-direction: column;
         align-items: flex-start;
     }
@@ -1251,3 +1327,5 @@ canvas {
         gap: 16px;
     }
 }
+
+

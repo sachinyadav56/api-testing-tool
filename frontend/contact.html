@@ -13,10 +13,8 @@
         <header class="contact-hero">
             <div class="contact-hero-content">
                 <span class="contact-badge">Support & Contact</span>
-<h1>Contact our team</h1>
-<p>
-    Reach out for support, business enquiries, onboarding help, or general product questions.
-</p>
+                <h1>Contact our team</h1>
+                <p>Reach out for support, business enquiries, onboarding help, or general product questions.</p>
             </div>
 
             <div class="contact-hero-actions">
@@ -48,22 +46,6 @@
                             <p><a href="mailto:support@apitool.com">support@apitool.com</a></p>
                         </div>
                     </div>
-
-                    <div class="contact-list-item">
-                        <div class="contact-icon">💼</div>
-                        <div>
-                            <h3>LinkedIn</h3>
-                            <p><a href="https://www.linkedin.com" target="_blank">linkedin.com/company/apitool</a></p>
-                        </div>
-                    </div>
-
-                    <div class="contact-list-item">
-                        <div class="contact-icon">🐦</div>
-                        <div>
-                            <h3>Twitter</h3>
-                            <p><a href="https://twitter.com" target="_blank">twitter.com/apitool</a></p>
-                        </div>
-                    </div>
                 </div>
             </div>
 
@@ -85,31 +67,73 @@
                 <label for="queryMessage">Message</label>
                 <textarea id="queryMessage" placeholder="Write your message here"></textarea>
 
-                <div class="button-group" style="margin-top: 16px;">
+                <div class="button-group" style="margin-top:16px;">
                     <button id="sendQueryBtn" type="button">Send Message</button>
                 </div>
+
+                <p id="queryStatusBox" style="margin-top:14px;font-weight:600;"></p>
             </div>
         </section>
-
-        <section class="contact-bottom-strip">
-            <div class="contact-strip-card">
-                <h3>Fast Support</h3>
-                <p>Quick help for product and account-related questions.</p>
-            </div>
-            <div class="contact-strip-card">
-                <h3>Business Enquiries</h3>
-                <p>Contact us for enterprise onboarding and partnerships.</p>
-            </div>
-            <div class="contact-strip-card">
-                <h3>Trusted Platform</h3>
-                <p>Built for individuals, teams, and organizations.</p>
-            </div>
-        </section>
-
     </div>
 </div>
 
 <script src="/theme.js"></script>
-<script src="/contact.js"></script>
+<script>
+const API_BASE = window.location.origin;
+
+const sendQueryBtn = document.getElementById("sendQueryBtn");
+const queryStatusBox = document.getElementById("queryStatusBox");
+
+function showQueryStatus(message, type = "error") {
+    queryStatusBox.textContent = message;
+    queryStatusBox.style.color = type === "success" ? "#22c55e" : "#ef4444";
+}
+
+sendQueryBtn.addEventListener("click", async () => {
+    const name = document.getElementById("queryName").value.trim();
+    const email = document.getElementById("queryEmail").value.trim();
+    const subject = document.getElementById("querySubject").value.trim();
+    const message = document.getElementById("queryMessage").value.trim();
+    const token = localStorage.getItem("token");
+
+    if (!name || !email || !subject || !message) {
+        showQueryStatus("All fields are required", "error");
+        return;
+    }
+
+    try {
+        const response = await fetch(`${API_BASE}/contact/query`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                ...(token ? { "Authorization": `Bearer ${token}` } : {})
+            },
+            body: JSON.stringify({
+                name,
+                email,
+                subject,
+                message
+            })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            showQueryStatus(data.error || "Failed to send query", "error");
+            return;
+        }
+
+        showQueryStatus("Query sent successfully", "success");
+
+        document.getElementById("queryName").value = "";
+        document.getElementById("queryEmail").value = "";
+        document.getElementById("querySubject").value = "";
+        document.getElementById("queryMessage").value = "";
+    } catch (error) {
+        console.error("Query send error:", error);
+        showQueryStatus("Cannot connect to server", "error");
+    }
+});
+</script>
 </body>
 </html>

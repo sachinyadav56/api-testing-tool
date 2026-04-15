@@ -4,13 +4,326 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Panel - API Tool</title>
-    <link rel="stylesheet" href="/style.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: "Segoe UI", Arial, sans-serif;
+            background:
+                radial-gradient(circle at top left, rgba(14, 165, 233, 0.14), transparent 28%),
+                radial-gradient(circle at top right, rgba(20, 184, 166, 0.12), transparent 26%),
+                linear-gradient(180deg, #03111f 0%, #071224 100%);
+            color: #f8fafc;
+        }
+
+        .admin-page-wrapper {
+            min-height: 100vh;
+            padding: 24px 0;
+        }
+
+        .admin-container {
+            max-width: 1320px;
+            margin: 0 auto;
+            padding: 0 24px;
+        }
+
+        .page-topbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 18px;
+            flex-wrap: wrap;
+            padding: 22px 26px;
+            border-radius: 24px;
+            background: rgba(10, 18, 32, 0.82);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            box-shadow: 0 18px 45px rgba(0, 0, 0, 0.28);
+            margin-bottom: 24px;
+        }
+
+        .page-topbar h1 {
+            margin: 0 0 6px;
+            font-size: 30px;
+            color: #f8fbff;
+            letter-spacing: -0.4px;
+        }
+
+        .page-topbar p {
+            margin: 0;
+            color: #9fb0c9;
+            font-size: 15px;
+        }
+
+        .topbar-links {
+            display: flex;
+            align-items: center;
+            gap: 18px;
+            flex-wrap: wrap;
+        }
+
+        .topbar-links a {
+            text-decoration: none;
+            color: #cbd5e1;
+            font-weight: 600;
+            transition: 0.2s ease;
+        }
+
+        .topbar-links a:hover {
+            color: #67e8f9;
+        }
+
+        #themeToggle {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 14px;
+            border-radius: 12px;
+            background: rgba(19, 32, 58, 0.9);
+            border: 1px solid rgba(148, 163, 184, 0.16);
+            color: #f8fbff;
+            cursor: pointer;
+        }
+
+        .logout-link {
+            color: #f87171 !important;
+        }
+
+        .logout-link:hover {
+            color: #ef4444 !important;
+        }
+
+        .hero-card {
+            position: relative;
+            overflow: hidden;
+            background: linear-gradient(135deg, #0f172a 0%, #0ea5e9 55%, #14b8a6 100%);
+            color: #fff;
+            border-radius: 30px;
+            box-shadow: 0 22px 60px rgba(6, 182, 212, 0.22);
+            padding: 34px;
+            margin-bottom: 22px;
+        }
+
+        .hero-card::after {
+            content: "";
+            position: absolute;
+            right: -55px;
+            top: -35px;
+            width: 220px;
+            height: 220px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.08);
+        }
+
+        .hero-card h2 {
+            margin: 0 0 10px;
+            font-size: 38px;
+            line-height: 1.1;
+            position: relative;
+            z-index: 1;
+        }
+
+        .hero-card p {
+            margin: 0;
+            color: rgba(255,255,255,0.92);
+            font-size: 17px;
+            line-height: 1.7;
+            max-width: 850px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 18px;
+            margin-bottom: 22px;
+        }
+
+        .stat-box {
+            background: rgba(19, 32, 58, 0.92);
+            border: 1px solid rgba(148, 163, 184, 0.16);
+            border-radius: 24px;
+            padding: 22px;
+            box-shadow: 0 18px 40px rgba(0, 0, 0, 0.24);
+            transition: 0.22s ease;
+        }
+
+        .stat-box:hover {
+            transform: translateY(-5px);
+            border-color: rgba(6, 182, 212, 0.35);
+            box-shadow: 0 24px 44px rgba(6, 182, 212, 0.10);
+        }
+
+        .stat-box h3 {
+            margin: 0 0 10px;
+            font-size: 14px;
+            color: #9fb0c9;
+            font-weight: 700;
+        }
+
+        .stat-box p {
+            margin: 0;
+            font-size: 34px;
+            font-weight: 800;
+            color: #f8fbff;
+        }
+
+        .quick-links-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 18px;
+            margin-bottom: 22px;
+        }
+
+        .quick-card {
+            position: relative;
+            overflow: hidden;
+            text-decoration: none;
+            background: rgba(19, 32, 58, 0.92);
+            border: 1px solid rgba(148, 163, 184, 0.16);
+            border-radius: 24px;
+            padding: 22px;
+            box-shadow: 0 18px 40px rgba(0, 0, 0, 0.22);
+            transition: 0.22s ease;
+        }
+
+        .quick-card::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(135deg, rgba(6, 182, 212, 0.12), rgba(20, 184, 166, 0.10));
+            opacity: 0;
+            transition: 0.22s ease;
+        }
+
+        .quick-card:hover {
+            transform: translateY(-6px);
+            border-color: rgba(6, 182, 212, 0.35);
+            box-shadow: 0 24px 44px rgba(6, 182, 212, 0.10);
+        }
+
+        .quick-card:hover::before {
+            opacity: 1;
+        }
+
+        .quick-card h3,
+        .quick-card p {
+            position: relative;
+            z-index: 1;
+        }
+
+        .quick-card h3 {
+            margin: 0 0 8px;
+            font-size: 20px;
+            color: #f8fbff;
+        }
+
+        .quick-card p {
+            margin: 0;
+            color: #9fb0c9;
+            line-height: 1.6;
+        }
+
+        .main-grid,
+        .bottom-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 18px;
+            margin-bottom: 22px;
+        }
+
+        .card {
+            background: rgba(19, 32, 58, 0.92);
+            border: 1px solid rgba(148, 163, 184, 0.16);
+            border-radius: 24px;
+            padding: 22px;
+            box-shadow: 0 18px 40px rgba(0, 0, 0, 0.22);
+        }
+
+        .section-head {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-bottom: 14px;
+        }
+
+        .section-head h2 {
+            margin: 0;
+            font-size: 22px;
+            color: #f8fbff;
+        }
+
+        canvas {
+            width: 100% !important;
+            max-width: 100%;
+        }
+
+        .nav-notification-link {
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .notification-badge {
+            min-width: 20px;
+            height: 20px;
+            padding: 0 6px;
+            border-radius: 999px;
+            background: #ef4444;
+            color: #fff;
+            font-size: 12px;
+            font-weight: 700;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            line-height: 1;
+        }
+
+        @media (max-width: 1100px) {
+            .stats-grid,
+            .quick-links-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+
+        @media (max-width: 850px) {
+            .main-grid,
+            .bottom-grid,
+            .stats-grid,
+            .quick-links-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .admin-container {
+                padding: 0 16px;
+            }
+
+            .page-topbar h1 {
+                font-size: 24px;
+            }
+
+            .hero-card {
+                padding: 26px 22px;
+            }
+
+            .hero-card h2 {
+                font-size: 30px;
+            }
+        }
+    </style>
 </head>
 <body>
 <div class="admin-page-wrapper">
     <div class="admin-container">
-
         <div class="page-topbar">
             <div>
                 <h1>Admin Control Panel</h1>
@@ -18,18 +331,22 @@
             </div>
 
             <div class="topbar-links">
-    <a href="#" id="themeToggle">🌙 Dark</a>
-    <a href="/admin-roles.html">Admin Roles</a>
-    <a href="/queries.html">Queries</a>
-    <a href="/settings.html">Settings</a>
-    <a href="/admin-pricing.html">Pricing</a>
-    
-<a href="/notifications.html" class="nav-notification-link">
-    Notifications
-    <span id="notificationBadge" class="notification-badge" style="display:none;">0</span>
+                <a href="#" id="themeToggle">🌙 Dark</a>
+                <a href="/admin-roles.html">Admin Roles</a>
+                <a href="/queries.html" class="nav-notification-link">
+    Queries
+    <span id="queryBadge" class="notification-badge" style="display:none;">0</span>
 </a>
-    <a href="#" id="logoutBtn" class="logout-link">Logout</a>
-</div>
+                <a href="/settings.html">Settings</a>
+                <a href="/admin-pricing.html">Pricing</a>
+
+                <a href="/notifications.html" class="nav-notification-link">
+                    Notifications
+                    <span id="notificationBadge" class="notification-badge" style="display:none;">0</span>
+                </a>
+
+                <a href="#" id="logoutBtn" class="logout-link">Logout</a>
+            </div>
         </div>
 
         <section class="hero-card">
@@ -44,51 +361,41 @@
                 <h3>Total Users</h3>
                 <p id="statUsers">0</p>
             </div>
-
             <div class="stat-box">
                 <h3>Total Requests</h3>
                 <p id="statRequests">0</p>
             </div>
-
             <div class="stat-box">
                 <h3>Success Rate</h3>
                 <p id="statRate">0%</p>
             </div>
-
             <div class="stat-box">
                 <h3>Total Pages</h3>
                 <p id="statPages">0</p>
             </div>
         </section>
 
-        <section class="quick-links-grid" style="grid-template-columns: repeat(5, 1fr);">
+        <section class="quick-links-grid">
             <a href="/users.html" class="quick-card">
                 <h3>Manage Users</h3>
                 <p>View and control users</p>
             </a>
-
             <a href="/cms.html" class="quick-card">
                 <h3>Manage CMS</h3>
                 <p>Create premium pages</p>
             </a>
-
             <a href="/history.html" class="quick-card">
                 <h3>Global History</h3>
                 <p>Track all requests</p>
             </a>
-
             <a href="/collections.html" class="quick-card">
                 <h3>Global Collections</h3>
                 <p>Manage all collections</p>
             </a>
-
             <a href="/purchases.html" class="quick-card">
                 <h3>Purchases</h3>
                 <p>View real user purchases</p>
             </a>
-
-            
-
         </section>
 
         <div class="main-grid">
@@ -122,29 +429,90 @@
                 <canvas id="purchaseStatusChart" height="120"></canvas>
             </section>
         </div>
-
     </div>
 </div>
 
 <script src="/theme.js"></script>
 <script src="/admin.js"></script>
 <script>
-async function loadUnreadNotificationCount() {
-    const token = localStorage.getItem("token");
-    if (!token) return;
+const ADMIN_API_BASE = window.location.origin;
+const token = localStorage.getItem("token");
+
+async function loadLiveQueries() {
+    const box = document.getElementById("liveQueriesBox");
+    if (!box || !token) return;
 
     try {
-        const response = await fetch(`${window.location.origin}/notifications/unread-count`, {
+        const response = await fetch(`${ADMIN_API_BASE}/admin/queries/latest`, {
             headers: {
                 "Authorization": `Bearer ${token}`
             }
         });
 
         const data = await response.json();
-        const badge = document.getElementById("notificationBadge");
-        if (!badge) return;
 
-        const count = Number(data.unread_count || 0);
+        if (!response.ok) {
+            box.innerHTML = `<p style="color:#ef4444;">${data.error || "Failed to load queries"}</p>`;
+            return;
+        }
+
+        if (!Array.isArray(data) || data.length === 0) {
+            box.innerHTML = `<p style="color:#9fb0c9;">No queries found</p>`;
+            return;
+        }
+
+        box.innerHTML = data.map(item => `
+            <div style="
+                padding:14px 16px;
+                border:1px solid rgba(148,163,184,0.14);
+                border-radius:14px;
+                margin-bottom:12px;
+                background:rgba(255,255,255,0.02);
+            ">
+                <div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;">
+                    <strong style="color:#f8fbff;">${item.subject || "-"}</strong>
+                    <span style="
+                        padding:4px 10px;
+                        border-radius:999px;
+                        font-size:12px;
+                        font-weight:700;
+                        background:${item.status === "solved" ? "rgba(34,197,94,0.14)" : "rgba(245,158,11,0.14)"};
+                        color:${item.status === "solved" ? "#22c55e" : "#fbbf24"};
+                    ">
+                        ${item.status || "pending"}
+                    </span>
+                </div>
+
+                <p style="margin:8px 0 6px;color:#cbd5e1;">
+                    ${item.name || "-"} · ${item.email || "-"}
+                </p>
+
+                <p style="margin:0;color:#9fb0c9;line-height:1.6;">
+                    ${item.message || "-"}
+                </p>
+            </div>
+        `).join("");
+    } catch (error) {
+        box.innerHTML = `<p style="color:#ef4444;">Failed to load queries</p>`;
+    }
+}
+
+async function loadPendingQueryCount() {
+    const badge = document.getElementById("queryBadge");
+    if (!badge || !token) return;
+
+    try {
+        const response = await fetch(`${ADMIN_API_BASE}/admin/queries/pending-count`, {
+            headers: {
+                "Authorization": `Bearer ${token}`
+            }
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) return;
+
+        const count = Number(data.pending_count || 0);
 
         if (count > 0) {
             badge.style.display = "inline-flex";
@@ -153,21 +521,18 @@ async function loadUnreadNotificationCount() {
             badge.style.display = "none";
         }
     } catch (error) {
-        console.log("Failed to load unread notification count");
+        console.log("Failed to load pending query count");
     }
 }
 
 document.addEventListener("DOMContentLoaded", () => {
-    loadUnreadNotificationCount();
+    loadLiveQueries();
+    loadPendingQueryCount();
 
-    const logoutBtn = document.getElementById("logoutBtn");
-    if (logoutBtn) {
-        logoutBtn.addEventListener("click", (e) => {
-            e.preventDefault();
-            localStorage.clear();
-            window.location.href = "/login.html";
-        });
-    }
+    setInterval(() => {
+        loadLiveQueries();
+        loadPendingQueryCount();
+    }, 10000);
 });
 </script>
 </body>

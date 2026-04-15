@@ -1,214 +1,254 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Purchase Management - API Tool</title>
-    <link rel="stylesheet" href="/style.css">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Purchases - API Tool</title>
+<style>
+body {
+    margin: 0;
+    font-family: "Segoe UI", Arial, sans-serif;
+    background:
+        radial-gradient(circle at top left, rgba(14,165,233,0.14), transparent 28%),
+        radial-gradient(circle at top right, rgba(20,184,166,0.12), transparent 26%),
+        linear-gradient(180deg, #03111f 0%, #071224 100%);
+    color: #f8fafc;
+}
+.page-wrap {
+    max-width: 1320px;
+    margin: auto;
+    padding: 24px;
+}
+.topbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+    background: rgba(10, 18, 32, 0.82);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 22px;
+    padding: 22px 24px;
+    margin-bottom: 22px;
+}
+.topbar h1 { margin: 0 0 6px; font-size: 28px; }
+.topbar p { margin: 0; color: #94a3b8; }
+.topbar-links {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+.topbar-links a,
+.topbar-links button {
+    text-decoration: none;
+    border: none;
+    background: #13203a;
+    color: #f8fafc;
+    padding: 10px 14px;
+    border-radius: 12px;
+    cursor: pointer;
+    font-weight: 600;
+}
+.topbar-links a:hover,
+.topbar-links button:hover {
+    background: #1d4ed8;
+}
+.hero {
+    background: linear-gradient(135deg, #0ea5e9, #14b8a6);
+    border-radius: 24px;
+    padding: 28px;
+    margin-bottom: 22px;
+}
+.hero h2 { margin: 0 0 8px; font-size: 32px; }
+.hero p { margin: 0; color: rgba(255,255,255,0.92); }
+.card {
+    background: rgba(19, 32, 58, 0.92);
+    border: 1px solid rgba(148, 163, 184, 0.16);
+    border-radius: 24px;
+    padding: 24px;
+}
+.table-wrap {
+    overflow-x: auto;
+}
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
+th, td {
+    padding: 14px;
+    text-align: left;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+th { color: #94a3b8; }
+.badge {
+    display: inline-block;
+    padding: 6px 10px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 700;
+}
+.badge.active {
+    background: rgba(34, 197, 94, 0.14);
+    color: #22c55e;
+}
+.badge.pending {
+    background: rgba(245, 158, 11, 0.14);
+    color: #fbbf24;
+}
+.badge.expired {
+    background: rgba(239, 68, 68, 0.14);
+    color: #ef4444;
+}
+.action-btn {
+    border: none;
+    background: #ef4444;
+    color: white;
+    padding: 9px 12px;
+    border-radius: 10px;
+    cursor: pointer;
+    font-weight: 700;
+}
+.action-btn:hover {
+    background: #dc2626;
+}
+.empty {
+    color: #94a3b8;
+    text-align: center;
+    padding: 18px 0;
+}
+@media (max-width: 700px) {
+    .page-wrap {
+        padding: 16px;
+    }
+}
+</style>
 </head>
 <body>
-<div class="admin-page-wrapper">
-    <div class="admin-container">
-
-        <div class="page-topbar">
-            <div>
-                <h1>Purchase Management</h1>
-                <p>View plan purchases and remove expired plans</p>
-            </div>
-
-            <div class="topbar-links">
-                <a href="#" id="themeToggle">🌙 Dark</a>
-                <a href="/admin.html">Admin</a>
-                <a href="/notifications.html">Notifications</a>
-                <a href="#" id="logoutBtn" class="logout-link">Logout</a>
-            </div>
+<div class="page-wrap">
+    <div class="topbar">
+        <div>
+            <h1>Purchases</h1>
+            <p>View and manage all user purchases</p>
         </div>
-
-        <section class="card">
-            <div class="table-wrapper">
-                <table class="admin-table">
-                    <thead>
-                        <tr>
-                            <th>ID</th>
-                            <th>User</th>
-                            <th>Email</th>
-                            <th>Plan</th>
-                            <th>Amount</th>
-                            <th>Status</th>
-                            <th>Start Date</th>
-                            <th>Expiry Date</th>
-                            <th>Action</th>
-                        </tr>
-                    </thead>
-                    <tbody id="purchasesTableBody">
-                        <tr>
-                            <td colspan="9">Loading purchases...</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-        </section>
-
+        <div class="topbar-links">
+            <button id="themeToggle">🌙 Dark</button>
+            <a href="/admin.html">Dashboard</a>
+            <a href="#" id="logoutBtn">Logout</a>
+        </div>
     </div>
+
+    <section class="hero">
+        <h2>Purchase Management</h2>
+        <p>See purchases and remove expired plans.</p>
+    </section>
+
+    <section class="card">
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th>User</th>
+                        <th>Plan</th>
+                        <th>Ammount</th>
+                        <th>Status</th>
+                        <th>Start</th>
+                        <th>Expiry</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody id="purchasesTableBody">
+                    <tr><td colspan="7" class="empty">Loading purchases...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
 </div>
 
 <script src="/theme.js"></script>
-
 <script>
 const API_BASE = window.location.origin;
 const token = localStorage.getItem("token");
-const loggedInUser = JSON.parse(localStorage.getItem("loggedInUser"));
 
-if (!token || !loggedInUser) {
-    window.location.href = "/login.html";
+if (!token) {
+    window.location.href = "/admin-login.html";
 }
 
-if (!loggedInUser.is_admin) {
-    window.location.href = "/dashboard.html";
-}
-
-function authHeaders() {
-    return {
-        "Authorization": `Bearer ${token}`
-    };
-}
-
-function ensureToastContainer() {
-    let container = document.getElementById("toastContainer");
-    if (!container) {
-        container = document.createElement("div");
-        container.id = "toastContainer";
-        container.className = "toast-container";
-        document.body.appendChild(container);
-    }
-    return container;
-}
-
-function showToast(message, type = "success") {
-    const container = ensureToastContainer();
-    const toast = document.createElement("div");
-    toast.className = `toast toast-${type}`;
-    toast.innerHTML = `
-        <span class="toast-icon">${type === "success" ? "✓" : "✕"}</span>
-        <span class="toast-text">${message}</span>
-        <button class="toast-close" type="button">&times;</button>
-    `;
-
-    toast.querySelector(".toast-close").addEventListener("click", () => {
-        toast.classList.remove("show");
-        setTimeout(() => toast.remove(), 250);
-    });
-
-    container.appendChild(toast);
-    requestAnimationFrame(() => toast.classList.add("show"));
-
-    setTimeout(() => {
-        toast.classList.remove("show");
-        setTimeout(() => toast.remove(), 250);
-    }, 3000);
-}
-
-function isExpiredDate(expiryDate) {
-    if (!expiryDate) return false;
-
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
-    const expiry = new Date(expiryDate);
-    expiry.setHours(0, 0, 0, 0);
-
-    return expiry < today;
-}
+document.getElementById("logoutBtn").addEventListener("click", (e) => {
+    e.preventDefault();
+    localStorage.clear();
+    window.location.href = "/admin-login.html";
+});
 
 async function loadPurchases() {
+    const tbody = document.getElementById("purchasesTableBody");
+
     try {
         const response = await fetch(`${API_BASE}/admin/purchases`, {
-            headers: authHeaders()
+            headers: {
+                "Authorization": `Bearer ${token}`
+            }
         });
 
         const data = await response.json();
-        const tbody = document.getElementById("purchasesTableBody");
         tbody.innerHTML = "";
 
         if (!response.ok) {
-            tbody.innerHTML = `<tr><td colspan="9">${data.error || "Failed to load purchases"}</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="7" class="empty">${data.error || "Failed to load purchases"}</td></tr>`;
             return;
         }
 
         if (!Array.isArray(data) || data.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="9">No purchases found.</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="7" class="empty">No purchases found</td></tr>`;
             return;
         }
 
         data.forEach(item => {
-            const expired = isExpiredDate(item.expiry_date);
+            const statusClass =
+                item.status === "active" ? "active" :
+                item.status === "expired" ? "expired" : "pending";
 
-            const row = document.createElement("tr");
-            row.innerHTML = `
-                <td>${item.id}</td>
+            const tr = document.createElement("tr");
+            tr.innerHTML = `
                 <td>${item.username || "-"}</td>
-                <td>${item.email || "-"}</td>
                 <td>${item.plan_name || "-"}</td>
                 <td>${item.amount || "-"}</td>
-                <td>${item.status || "-"}</td>
+                <td><span class="badge ${statusClass}">${item.status || "-"}</span></td>
                 <td>${item.start_date || "-"}</td>
                 <td>${item.expiry_date || "-"}</td>
-                <td>
-                    ${
-                        expired
-                            ? `<button type="button" class="delete-btn remove-plan-btn" data-id="${item.id}">Remove</button>`
-                            : `<span class="role-user">Active</span>`
-                    }
-                </td>
+                <td><button class="action-btn" onclick="removePurchase(${item.id})">Remove</button></td>
             `;
-            tbody.appendChild(row);
+            tbody.appendChild(tr);
         });
-
-        document.querySelectorAll(".remove-plan-btn").forEach(btn => {
-            btn.addEventListener("click", async () => {
-                const purchaseId = btn.dataset.id;
-
-                if (!confirm("Remove this expired plan?")) return;
-
-                try {
-                    const removeResponse = await fetch(`${API_BASE}/admin/purchases/remove/${purchaseId}`, {
-                        method: "DELETE",
-                        headers: authHeaders()
-                    });
-
-                    const removeData = await removeResponse.json();
-
-                    if (!removeResponse.ok) {
-                        showToast(removeData.error || "Failed to remove expired plan", "error");
-                        return;
-                    }
-
-                    showToast(removeData.message || "Expired plan removed successfully", "success");
-                    loadPurchases();
-                } catch (error) {
-                    showToast("Failed to remove expired plan", "error");
-                }
-            });
-        });
-
     } catch (error) {
-        document.getElementById("purchasesTableBody").innerHTML =
-            `<tr><td colspan="9">Failed to load purchases.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="7" class="empty">Failed to load purchases</td></tr>`;
     }
 }
 
-window.addEventListener("DOMContentLoaded", () => {
-    loadPurchases();
+async function removePurchase(purchaseId) {
+    if (!confirm("Remove this purchase?")) return;
 
-    const logoutBtn = document.getElementById("logoutBtn");
-    if (logoutBtn) {
-        logoutBtn.addEventListener("click", (e) => {
-            e.preventDefault();
-            localStorage.clear();
-            window.location.href = "/login.html";
+    try {
+        const response = await fetch(`${API_BASE}/admin/purchases/remove/${purchaseId}`, {
+            method: "DELETE",
+            headers: {
+                "Authorization": `Bearer ${token}`
+            }
         });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            alert(data.error || "Failed to remove purchase");
+            return;
+        }
+
+        loadPurchases();
+    } catch (error) {
+        alert("Something went wrong");
     }
-});
+}
+
+loadPurchases();
 </script>
 </body>
 </html>

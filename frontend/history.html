@@ -1,69 +1,218 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>History</title>
-    <link rel="stylesheet" href="/style.css">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Global History - API Tool</title>
+<style>
+body {
+    margin: 0;
+    font-family: "Segoe UI", Arial, sans-serif;
+    background:
+        radial-gradient(circle at top left, rgba(14,165,233,0.14), transparent 28%),
+        radial-gradient(circle at top right, rgba(20,184,166,0.12), transparent 26%),
+        linear-gradient(180deg, #03111f 0%, #071224 100%);
+    color: #f8fafc;
+}
+.page-wrap {
+    max-width: 1320px;
+    margin: auto;
+    padding: 24px;
+}
+.topbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+    background: rgba(10, 18, 32, 0.82);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 22px;
+    padding: 22px 24px;
+    margin-bottom: 22px;
+}
+.topbar h1 {
+    margin: 0 0 6px;
+    font-size: 28px;
+}
+.topbar p {
+    margin: 0;
+    color: #94a3b8;
+}
+.topbar-links {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+.topbar-links a,
+.topbar-links button {
+    text-decoration: none;
+    border: none;
+    background: #13203a;
+    color: #f8fafc;
+    padding: 10px 14px;
+    border-radius: 12px;
+    cursor: pointer;
+    font-weight: 600;
+}
+.topbar-links a:hover,
+.topbar-links button:hover {
+    background: #1d4ed8;
+}
+.hero {
+    background: linear-gradient(135deg, #0ea5e9, #14b8a6);
+    border-radius: 24px;
+    padding: 28px;
+    margin-bottom: 22px;
+}
+.hero h2 {
+    margin: 0 0 8px;
+    font-size: 32px;
+}
+.hero p {
+    margin: 0;
+    color: rgba(255,255,255,0.92);
+}
+.card {
+    background: rgba(19, 32, 58, 0.92);
+    border: 1px solid rgba(148, 163, 184, 0.16);
+    border-radius: 24px;
+    padding: 24px;
+}
+.table-wrap {
+    overflow-x: auto;
+}
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
+th, td {
+    padding: 14px;
+    text-align: left;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+    vertical-align: top;
+}
+th {
+    color: #94a3b8;
+    font-size: 14px;
+}
+.method {
+    display: inline-block;
+    padding: 6px 10px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 700;
+    background: rgba(6, 182, 212, 0.14);
+    color: #67e8f9;
+}
+.empty {
+    color: #94a3b8;
+    text-align: center;
+    padding: 18px 0;
+}
+@media (max-width: 900px) {
+    .page-wrap {
+        padding: 16px;
+    }
+}
+</style>
 </head>
 <body>
-<div class="admin-page-wrapper">
-    <div class="admin-container">
-
-        <div class="page-topbar">
-            <div>
-                <h1>Request History</h1>
-                <p>All users history including admin</p>
-            </div>
-
-            <div class="topbar-actions">
-                <button id="themeToggle" class="theme-btn">☀ Light</button>
-                <a href="/admin.html" class="back-btn">← Dashboard</a>
-                <button id="deleteSelectedHistoryBtn" class="danger-btn">Delete Selected</button>
-            </div>
+<div class="page-wrap">
+    <div class="topbar">
+        <div>
+            <h1>Global History</h1>
+            <p>Track all request history from one place</p>
         </div>
-
-        <section class="card">
-            <div class="section-head">
-                <h2>History</h2>
-                <div class="button-group">
-                    <input type="text" id="searchHistory" placeholder="Search URL">
-                    <select id="methodFilter">
-                        <option value="">All Methods</option>
-                        <option value="GET">GET</option>
-                        <option value="POST">POST</option>
-                        <option value="PUT">PUT</option>
-                        <option value="PATCH">PATCH</option>
-                        <option value="DELETE">DELETE</option>
-                    </select>
-                </div>
-            </div>
-
-            <div class="table-wrapper">
-                <table class="admin-table">
-                    <thead>
-                        <tr>
-                            <th><input type="checkbox" id="selectAllHistory"></th>
-                            <th>User</th>
-                            <th>Method</th>
-                            <th>Status</th>
-                            <th>URL</th>
-                            <th>Date</th>
-                        </tr>
-                    </thead>
-                    <tbody id="historyTableBody">
-                        <tr>
-                            <td colspan="6">Loading history...</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-        </section>
-
+        <div class="topbar-links">
+            <button id="themeToggle">🌙 Dark</button>
+            <a href="/admin.html">Dashboard</a>
+            <a href="#" id="logoutBtn">Logout</a>
+        </div>
     </div>
+
+    <section class="hero">
+        <h2>Request History</h2>
+        <p>Monitor all API activity and request logs.</p>
+    </section>
+
+    <section class="card">
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th>User</th>
+                        <th>Method</th>
+                        <th>URL</th>
+                        <th>Status</th>
+                        <th>Time</th>
+                        <th>Date</th>
+                    </tr>
+                </thead>
+                <tbody id="historyTableBody">
+                    <tr><td colspan="6" class="empty">Loading history...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
 </div>
 
 <script src="/theme.js"></script>
-<script src="/history.js"></script>
+<script>
+const API_BASE = window.location.origin;
+const token = localStorage.getItem("token");
+
+if (!token) {
+    window.location.href = "/admin-login.html";
+}
+
+document.getElementById("logoutBtn").addEventListener("click", (e) => {
+    e.preventDefault();
+    localStorage.clear();
+    window.location.href = "/admin-login.html";
+});
+
+async function loadHistory() {
+    const tbody = document.getElementById("historyTableBody");
+
+    try {
+        const response = await fetch(`${API_BASE}/admin/history`, {
+            headers: {
+                "Authorization": `Bearer ${token}`
+            }
+        });
+
+        const data = await response.json();
+        tbody.innerHTML = "";
+
+        if (!response.ok) {
+            tbody.innerHTML = `<tr><td colspan="6" class="empty">${data.error || "Failed to load history"}</td></tr>`;
+            return;
+        }
+
+        if (!Array.isArray(data) || data.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="6" class="empty">No history found</td></tr>`;
+            return;
+        }
+
+        data.forEach(item => {
+            const tr = document.createElement("tr");
+            tr.innerHTML = `
+                <td>${item.username || "-"}</td>
+                <td><span class="method">${item.method || "-"}</span></td>
+                <td>${item.url || "-"}</td>
+                <td>${item.status_code || "-"}</td>
+                <td>${item.response_time_ms ?? "-"} ms</td>
+                <td>${item.created_at || "-"}</td>
+            `;
+            tbody.appendChild(tr);
+        });
+    } catch (error) {
+        tbody.innerHTML = `<tr><td colspan="6" class="empty">Failed to load history</td></tr>`;
+    }
+}
+
+loadHistory();
+</script>
 </body>
 </html>
